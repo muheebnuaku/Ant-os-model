@@ -27,7 +27,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from antos_api import anchor, audit, notify, service, views
+from antos_api import anchor, audit, notify, service, setup, views
 from antos_api.auth import (
     API_KEY_PREFIX,
     AuthError,
@@ -146,8 +146,12 @@ def create_app(settings: Settings | None = None, *, runtime: Runtime | None = No
         else:
             app.state.runtime, app.state.oidc = runtime, oidc
         rt: Runtime = app.state.runtime
+        if settings.auto_migrate and app.state.engine is not None:
+            await setup.migrate(app.state.engine)
         async with rt.sessions.begin() as session:
             await service.bootstrap(session, rt.configs, settings.profile_dir)
+        if settings.demo_seed and app.state.engine is not None:
+            await setup.prepare_demo(app.state.engine, rt, settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:

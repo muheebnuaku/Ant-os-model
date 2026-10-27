@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/index.py": {
-      "includeFiles": "{packages/antos-core/src,services/api/src,profiles}/**",
+      "includeFiles": "{packages/antos-core/src/**,services/api/src/**,services/api/migrations/**,services/api/alembic.ini,profiles/**}",
       "maxDuration": 60
     }
   },

@@ -902,3 +902,26 @@ async def test_demo_seed_records_real_decisions(p: Platform) -> None:
     assert report.ok and report.total == 8
     queue = (await p.client.get("/v1/escalations", headers=await p.headers("regulator"))).json()
     assert queue and all(e["created_by"] == "system:demo-seed" for e in queue)
+
+
+async def test_self_setup_migrates_seeds_and_creates_the_demo_key() -> None:
+    """A brand-new, empty database: the service migrates it, records the sample
+    decisions and the demo key, and a second start changes nothing."""
+    assert DB_URL
+    cfg = Config(str(ROOT / "services" / "api" / "alembic.ini"))
+    cfg.attributes["database_url"] = DB_URL
+    await asyncio.to_thread(command.downgrade, cfg, "base")  # the CLI path runs its own loop
+    key_id, secret_hash, token = new_api_key()
+    settings = Settings(database_url=DB_URL, profile_dir=PROFILE_DIR, serverless=True,
+                        auto_migrate=True, demo_seed=True, demo_key_id=key_id,
+                        demo_key_hash=secret_hash)
+    for _ in range(2):
+        app = create_app(settings)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            assert (await c.get("/readyz")).json()["status"] == "ready"
+            me = (await c.get("/v1/me", headers={"X-API-Key": token})).json()
+            assert "administrator" in me["roles"]
+            decisions = (await c.get("/v1/decisions?limit=50", headers={"X-API-Key": token})).json()
+            assert len(decisions) == 8
+            assert (await c.get("/v1/audit/verify", headers={"X-API-Key": token})).json()["ok"]
+        await app.state.engine.dispose()

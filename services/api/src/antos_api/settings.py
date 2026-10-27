@@ -44,6 +44,15 @@ class Settings(BaseSettings):
     trust_forwarded_for: bool = False
     # Shared secret for scheduled calls to /v1/ops/daily (Vercel sets CRON_SECRET).
     cron_secret: SecretStr | None = None
+    # Apply database migrations at start-up (hosts where no one can run Alembic).
+    auto_migrate: bool = False
+    # Demonstration node: record the sample decisions when the database is empty,
+    # and ensure one access key exists. Only the key's id and SHA-256 hash are
+    # configured; the key itself is never stored anywhere.
+    demo_seed: bool = False
+    demo_key_id: str | None = None
+    demo_key_hash: SecretStr | None = None
+    demo_key_roles: list[str] = ["analyst", "operator", "sector_lead", "regulator", "administrator"]
 
     # Human identity: OIDC (Keycloak). When unset, only API keys are accepted.
     oidc_issuer: str | None = None

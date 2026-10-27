@@ -35,5 +35,7 @@ async def run_migrations_online() -> None:
 
 if context.is_offline_mode():
     run_migrations_offline()
+elif (connection := context.config.attributes.get("connection")) is not None:
+    _run(connection)  # called from the running service (antos_api.setup)
 else:
     asyncio.run(run_migrations_online())

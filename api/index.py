@@ -16,7 +16,10 @@ for src in ("packages/antos-core/src", "services/api/src"):
 os.environ.setdefault("ANTOS_PROFILE_DIR", str(ROOT / "profiles" / "africa"))
 os.environ.setdefault("ANTOS_SERVERLESS", "true")
 os.environ.setdefault("ANTOS_TRUST_FORWARDED_FOR", "true")
-for target, sources in (("ANTOS_DATABASE_URL", ("DATABASE_URL", "POSTGRES_URL")),
+# Prefer the direct (unpooled) connection: asyncpg's prepared statements do not
+# survive a transaction-mode pooler, and a demo needs few connections.
+for target, sources in (("ANTOS_DATABASE_URL", ("DATABASE_URL_UNPOOLED", "POSTGRES_URL_NON_POOLING",
+                                                "DATABASE_URL", "POSTGRES_URL")),
                         ("ANTOS_CRON_SECRET", ("CRON_SECRET",))):
     if target not in os.environ:
         for name in sources:
