@@ -3,7 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 
 import { ErrorNotice, PageHeader, Segmented, SkeletonRows, humanize, sectorName } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -46,7 +46,7 @@ const blank = (): Row => ({ id: seq++, type: "", reading: "", source: "", kind: 
 
 function FormSection({ n, title, description, children }: { n: number; title: string; description: string; children: ReactNode }) {
   return (
-    <section className="card card-pad stack" aria-labelledby={`s${n}`}>
+    <section className="card card-pad stack" id={`step-${n}`} aria-labelledby={`s${n}`} style={{ scrollMarginTop: 120 }}>
       <div className="row" style={{ alignItems: "flex-start", flexWrap: "nowrap", gap: 12 }}>
         <span className="step-number" aria-hidden>{n}</span>
         <div><h2 id={`s${n}`}>{title}</h2><p className="t-small t-muted">{description}</p></div>
@@ -116,10 +116,11 @@ export default function NewDecisionPage() {
   );
 
   return (
-    <div className="page" style={{ maxWidth: 880 }}>
+    <div className="page content-narrow">
       <PageHeader title="New decision" description="Describe the decision and the evidence. ANT-OS checks the evidence, advises, and calls a person when required." />
       {!sectors.data ? <div className="card"><SkeletonRows /></div> : (
         <form className="stack" style={{ gap: 24 }} onSubmit={submit} noValidate>
+          <FormProgress />
           <FormSection n={1} title="Decision" description="What needs to be decided, and in which sector.">
             <div className="field-grid" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr)" }}>
               <label className="field">
@@ -181,12 +182,12 @@ export default function NewDecisionPage() {
                     </div>
                     {(missing(r.type) || missing(r.source)) ? <span className="field-hint" style={{ color: "var(--critical)" }}>Select what it measures and who reported it.</span> : null}
                     {rows.length > 1 ? (
-                      <div><button type="button" className="btn btn-tertiary btn-danger btn-compact" onClick={() => setRows((rs) => rs.filter((x) => x.id !== r.id))}><Trash2 size={16} strokeWidth={1.75} aria-hidden />Remove</button></div>
+                      <div><button type="button" className="btn btn-tertiary btn-danger btn-compact" onClick={() => setRows((rs) => rs.filter((x) => x.id !== r.id))}><Trash2 size={16} strokeWidth={1.5} aria-hidden />Remove</button></div>
                     ) : null}
                   </fieldset>
                 ))}
                 <div className="between" style={{ flexWrap: "wrap" }}>
-                  <button type="button" className="btn" onClick={() => setRows((rs) => [...rs, blank()])}><Plus size={16} strokeWidth={1.75} aria-hidden />Add evidence from another source</button>
+                  <button type="button" className="btn" onClick={() => setRows((rs) => [...rs, blank()])}><Plus size={16} strokeWidth={1.5} aria-hidden />Add evidence from another source</button>
                   <span className="t-small t-muted">Two independent sources that agree are far more trustworthy than one.</span>
                 </div>
               </div>
@@ -222,5 +223,32 @@ export default function NewDecisionPage() {
         </form>
       )}
     </div>
+  );
+}
+
+const STEPS = ["Decision", "Evidence", "Context"];
+
+/** Slim step header; highlights the section currently in view. */
+function FormProgress() {
+  const [current, setCurrent] = useState(1);
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (visible) setCurrent(Number(visible.target.id.replace("step-", "")));
+    }, { rootMargin: "-120px 0px -55% 0px" });
+    STEPS.forEach((_, i) => {
+      const el = document.getElementById(`step-${i + 1}`);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <nav className="form-progress" aria-label="Form steps">
+      {STEPS.map((label, i) => (
+        <a key={label} href={`#step-${i + 1}`} aria-current={current === i + 1 ? "step" : undefined}>
+          <span>{i + 1}</span>{label}
+        </a>
+      ))}
+    </nav>
   );
 }

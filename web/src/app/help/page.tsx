@@ -10,7 +10,7 @@ const RESULTS = [
 
 export default function HelpPage() {
   return (
-    <div className="page" style={{ maxWidth: 880 }}>
+    <div className="page content-narrow">
       <PageHeader title="Help" description="How to read ANT-OS." />
       <Section title="What ANT-OS does">
         <div className="card card-pad stack-sm">

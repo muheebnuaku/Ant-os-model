@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 
 import { ToneIcon, type Tone } from "@/components/ui";
 
@@ -18,25 +18,37 @@ const ToastContext = createContext<(text: string, tone?: Tone) => void>(() => un
 
 let nextId = 1;
 
+const LIFETIME_MS = 5000;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const dismiss = useCallback((id: number) => {
+    clearTimeout(timers.current.get(id));
+    timers.current.delete(id);
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }, []);
+  const schedule = useCallback((id: number) => {
+    clearTimeout(timers.current.get(id));
+    timers.current.set(id, setTimeout(() => dismiss(id), LIFETIME_MS));
+  }, [dismiss]);
   const push = useCallback((text: string, tone: Tone = "good") => {
     const id = nextId++;
     setToasts((t) => [...t.slice(-2), { id, tone, text }]);
-    setTimeout(() => dismiss(id), 5000);
-  }, [dismiss]);
+    schedule(id);
+  }, [schedule]);
 
   return (
     <ToastContext.Provider value={push}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className="toast">
+          // Hovering pauses the countdown; leaving starts it again.
+          <div key={t.id} className="toast" onMouseEnter={() => clearTimeout(timers.current.get(t.id))} onMouseLeave={() => schedule(t.id)}>
             <ToneIcon tone={t.tone} />
             <span>{t.text}</span>
             <button type="button" className="icon-button" aria-label="Dismiss" onClick={() => dismiss(t.id)} style={{ width: 28, height: 28 }}>
-              <X size={16} strokeWidth={1.75} />
+              <X size={16} strokeWidth={1.5} />
             </button>
           </div>
         ))}

@@ -112,8 +112,21 @@ first-class, separately tuned theme.
 | Neutral | `text-3` | `surface-2` | `surface-2` |
 
 Charts keep the validated data-viz palette (series 1 `#2A78D6` light /
-`#3987E5` dark; negative `#E34948` / `#E66767`). Their status colours are the
-status foregrounds above. Run the palette validator after any change.
+`#3987E5` dark; negative `#E34948` / `#E66767`). Run the palette validator
+after any change.
+
+**Activity heatmap (validated, all pairs, both themes).** The five evidence
+results are folded into three colour classes, because in a grid every cell can
+neighbour every other and the status colours above fail there (warning
+against serious measured ΔE 4.1 in light mode).
+
+| Class | Light | Dark |
+|---|---|---|
+| Trusted or provisional | `#2A78D6` | `#3987E5` |
+| Decayed or conflicted | `#EB6834` | `#E0702E` |
+| Blocked | `#A3214F` | `#B42A5C` |
+
+The tooltip and the table view still give each cell's exact result.
 
 ### 4.3 Space, shape, depth
 

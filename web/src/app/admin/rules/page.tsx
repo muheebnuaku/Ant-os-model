@@ -80,7 +80,7 @@ export default function RulesPage() {
             <div className="stack-sm">
               {packs.map((p) => (
                 <details key={p.sector_id} className="disclosure">
-                  <summary><ChevronRight size={16} strokeWidth={1.75} aria-hidden />{sectorName(p.sector_name)} <span className="t-small t-muted">· {p.escalation_rules.length} rules</span></summary>
+                  <summary><ChevronRight size={16} strokeWidth={1.5} aria-hidden />{sectorName(p.sector_name)} <span className="t-small t-muted">· {p.escalation_rules.length} rules</span></summary>
                   <div className="disclosure-body" style={{ padding: 0 }}>
                     <DataTable caption={`${p.sector_name} escalation rules`} rows={p.escalation_rules} rowKey={(r) => r.id} empty={{ title: "No sector-specific rules" }}
                       columns={[
@@ -96,7 +96,7 @@ export default function RulesPage() {
           </Section>
 
           <details className="disclosure">
-            <summary><ChevronRight size={16} strokeWidth={1.75} aria-hidden />Technical record</summary>
+            <summary><ChevronRight size={16} strokeWidth={1.5} aria-hidden />Technical record</summary>
             <div className="disclosure-body"><pre className="json">{JSON.stringify(c, null, 2)}</pre></div>
           </details>
         </>

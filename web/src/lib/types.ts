@@ -27,6 +27,7 @@ export interface Sector {
   priority_24hae: string;
   half_life_hours: number;
   model_route: "default" | "sovereign" | "rules_only";
+  validation_thresholds: { trusted: number; provisional: number };
   signal_types: Record<string, string | null>;
 }
 

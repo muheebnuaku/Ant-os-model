@@ -68,7 +68,7 @@ function Decisions() {
 
       <ContextBar>
         <label className="search-field">
-          <Search size={16} strokeWidth={1.75} aria-hidden />
+          <Search size={16} strokeWidth={1.5} aria-hidden />
           <input className="control" type="search" placeholder="Search decisions" aria-label="Search decisions" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
         <select className="control" aria-label="Sector" value={sector} onChange={(e) => setSector(e.target.value)}>
@@ -112,9 +112,9 @@ function Decisions() {
             empty={{ title: "No decisions match", description: "Try a wider date range or fewer filters." }}
             columns={[
               { key: "d", header: "Decision", render: (d) => <><Link href={`/decisions/${d.audit_ref}`} className="cell-primary" style={{ color: "var(--text)" }}>{d.objective ?? d.decision_id}</Link><div className="cell-secondary">{humanize(d.sector)}</div></> },
-              { key: "r", header: "Evidence result", render: (d) => <Badge status={d.validation_state} /> },
-              { key: "c", header: "Confidence", render: (d) => <Meter value={d.confidence} /> },
-              { key: "a", header: "Advised action", render: (d) => <Badge status={d.action} /> },
+              { key: "r", header: "Evidence result", render: (d) => <Badge status={d.validation_state} dot /> },
+              { key: "c", header: "Confidence", render: (d) => <Meter value={d.confidence} width={48} /> },
+              { key: "a", header: "Advised action", render: (d) => <Badge status={d.action} dot /> },
               { key: "h", header: "Human review", render: (d) => (d.human_escalation_required ? "Required" : "Not required") },
               { key: "w", header: "Evaluated", render: (d) => <Time iso={d.created_at} now={now} /> },
             ]}

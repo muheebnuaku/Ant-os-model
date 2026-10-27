@@ -52,7 +52,7 @@ export function CommandPalette({ open, onOpenChange, onTheme }: { open: boolean;
   return (
     <Command.Dialog open={open} onOpenChange={onOpenChange} label="Search" className="command" loop>
       <div className="command-input">
-        <Search size={18} strokeWidth={1.75} aria-hidden />
+        <Search size={18} strokeWidth={1.5} aria-hidden />
         <Command.Input placeholder="Search decisions, sectors, records…" autoFocus />
       </div>
       <Command.List>
@@ -97,6 +97,11 @@ export function CommandPalette({ open, onOpenChange, onTheme }: { open: boolean;
           </Command.Item>
         </Command.Group>
       </Command.List>
+      <div className="command-foot" aria-hidden>
+        <span><kbd>↑↓</kbd>navigate</span>
+        <span><kbd>↵</kbd>open</span>
+        <span><kbd>esc</kbd>close</span>
+      </div>
     </Command.Dialog>
   );
 }

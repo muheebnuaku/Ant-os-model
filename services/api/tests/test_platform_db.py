@@ -690,6 +690,8 @@ async def test_me_sectors_decision_list_and_audit_browser(p: Platform) -> None:
     assert me["roles"] == ["analyst", "regulator"] and "audit_mode" in me["permissions"]
     sectors = (await p.client.get("/v1/sectors", headers=h)).json()
     assert {s["sector_id"] for s in sectors} >= {"health", "ports"}
+    health = next(s for s in sectors if s["sector_id"] == "health")
+    assert health["validation_thresholds"] == {"trusted": 0.88, "provisional": 0.60}
 
     for i in range(3):
         p.clock.now = NOW + timedelta(seconds=i)

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Link2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import { DataTable } from "@/components/DataTable";
@@ -53,12 +53,17 @@ export default function RecordsPage() {
   if (eventType) q.set("event_type", eventType);
   if (before !== null) q.set("before_seq", String(before));
   const entries = useApi<AuditEntrySummary[]>(`/v1/audit/entries?${q.toString()}`);
+  const latest = useApi<AuditEntrySummary[]>("/v1/audit/entries?limit=6");
+  const anchors = useApi<{ up_to_seq: number }[]>("/v1/audit/anchors");
   const [verifiedAt, setVerifiedAt] = useState<string>(new Date().toISOString());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [open, setOpen] = useState<{ entry: AuditEntrySummary; payload: unknown } | null>(null);
 
-  const refreshAll = () => { verify.reload(); node.reload(); lastReplay.reload(); entries.reload(); setVerifiedAt(new Date().toISOString()); };
+  const refreshAll = () => {
+    verify.reload(); node.reload(); lastReplay.reload(); entries.reload(); latest.reload(); anchors.reload();
+    setVerifiedAt(new Date().toISOString());
+  };
 
   async function run(what: string, fn: () => Promise<unknown>, done?: string) {
     setBusy(what);
@@ -85,6 +90,7 @@ export default function RecordsPage() {
   const v = verify.data;
   const n = node.data;
   const replay = replayDetail.data?.payload;
+  const sealed = new Set((anchors.data ?? []).map((a) => a.up_to_seq));
 
   return (
     <div className="page">
@@ -98,18 +104,24 @@ export default function RecordsPage() {
 
       <section className="card card-pad" aria-label="Integrity">
         {v ? (
-          <div className="layout-main" style={{ gap: 32 }}>
-            <Notice tone={v.ok ? "good" : "critical"}>
-              {v.ok ? (
-                <><span className="t-strong">All {v.chain.entries_checked.toLocaleString()} records intact · {v.anchors.anchors_checked} seal{v.anchors.anchors_checked === 1 ? "" : "s"} valid.</span> No record has been altered or removed.</>
-              ) : (
-                <><span className="t-strong">Integrity check failed.</span> {v.chain.problem ? `Record ${v.chain.first_bad_seq}: ${v.chain.problem}.` : v.anchors.problems[0]}</>
-              )}
-            </Notice>
-            <dl className="kv">
-              <dt>Last verified</dt><dd><Time iso={verifiedAt} now={now} /></dd>
-              <dt>Last sealed</dt><dd>{n?.last_anchor_at ? <Time iso={n.last_anchor_at} now={now} /> : "Not yet sealed"}</dd>
-              <dt>Records since last seal</dt><dd>{n ? n.entries_since_anchor.toLocaleString() : "Not recorded"}</dd>
+          <div className="integrity">
+            <span className="integrity-icon" style={{ background: v.ok ? "var(--good-bg)" : "var(--critical-bg)", color: v.ok ? "var(--good)" : "var(--critical)" }} aria-hidden>
+              {v.ok ? <ShieldCheck strokeWidth={1.5} /> : <ShieldAlert strokeWidth={1.5} />}
+            </span>
+            <div role="status">
+              <div style={{ fontSize: 18, lineHeight: "26px", fontWeight: 600, letterSpacing: "-0.01em" }}>
+                {v.ok ? `All ${v.chain.entries_checked.toLocaleString()} records intact` : "Integrity check failed"}
+              </div>
+              <div className="t-small t-muted">
+                {v.ok
+                  ? `${v.anchors.anchors_checked} seal${v.anchors.anchors_checked === 1 ? "" : "s"} valid. No record has been altered or removed.`
+                  : v.chain.problem ? `Record ${v.chain.first_bad_seq}: ${v.chain.problem}.` : v.anchors.problems[0]}
+              </div>
+            </div>
+            <dl className="facts">
+              <div><dt>Last verified</dt><dd><Time iso={verifiedAt} now={now} /></dd></div>
+              <div><dt>Last sealed</dt><dd>{n?.last_anchor_at ? <Time iso={n.last_anchor_at} now={now} /> : "Not yet"}</dd></div>
+              <div><dt>Since last seal</dt><dd>{n ? `${n.entries_since_anchor.toLocaleString()} records` : "Not recorded"}</dd></div>
             </dl>
           </div>
         ) : <SkeletonRows rows={2} />}
@@ -122,6 +134,24 @@ export default function RecordsPage() {
           context={replay ? <>Last run <Time iso={replay.at} now={now} /></> : "Run a re-check below"} />
         <Kpi label="Last seal" value={n?.last_anchor_at ? <Time iso={n.last_anchor_at} now={now} /> : "None"} context={n?.last_anchor_seq ? `Up to record ${n.last_anchor_seq}` : "Sealing runs nightly"} />
       </Kpis>
+
+      <Section title="Latest records, linked" description="Each record carries the fingerprint of the one before it. Sealed records are marked.">
+        {latest.data?.length ? (
+          <div className="chain">
+            {[...latest.data].reverse().map((e, i) => (
+              <div key={e.seq} style={{ display: "flex" }}>
+                {i > 0 ? <span className="chain-link" aria-hidden><Link2 size={14} strokeWidth={1.5} /></span> : null}
+                <button type="button" className="chain-block" data-sealed={sealed.has(e.seq)} onClick={() => void openEntry(e)}>
+                  <span className="t-micro t-muted">#{e.seq} · <Time iso={e.created_at} now={now} /></span>
+                  <span className="t-small t-strong">{EVENTS[e.event_type] ?? e.event_type}</span>
+                  <span className="t-mono t-muted">{e.entry_hash.slice(0, 10)}</span>
+                  {sealed.has(e.seq) ? <span className="t-micro" style={{ color: "var(--good)" }}>Sealed</span> : null}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : <div className="card"><SkeletonRows rows={2} /></div>}
+      </Section>
 
       <Section title="Checks you can run">
         <div className="grid-2">
@@ -161,7 +191,7 @@ export default function RecordsPage() {
               { key: "r", header: "Reference", render: (e) => <span className="t-small t-muted">#{e.seq} · {e.ref}</span> },
               { key: "w", header: "By", render: (e) => who(e.actor) },
               { key: "t", header: "When", render: (e) => <Time iso={e.created_at} now={now} /> },
-              { key: "o", header: "", render: () => <ChevronRight size={16} strokeWidth={1.75} className="t-muted" aria-hidden /> },
+              { key: "o", header: "", render: () => <ChevronRight size={16} strokeWidth={1.5} className="t-muted" aria-hidden /> },
             ]}
           />
         </div>
@@ -178,7 +208,7 @@ export default function RecordsPage() {
             </dl>
           </Section>
           <details className="disclosure">
-            <summary><ChevronRight size={16} strokeWidth={1.75} aria-hidden />Technical record</summary>
+            <summary><ChevronRight size={16} strokeWidth={1.5} aria-hidden />Technical record</summary>
             <div className="disclosure-body">
               <dl className="kv">
                 <dt>Fingerprint</dt><dd className="t-mono">{open.entry.entry_hash}</dd>

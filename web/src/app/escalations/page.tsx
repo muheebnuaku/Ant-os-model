@@ -84,8 +84,8 @@ function ReviewQueue() {
 
       <div className="stack">
         <Tabs<Status> value={status} onChange={setStatus} tabs={[
-          { value: "open", label: `New (${mine.filter((e) => e.status === "open").length})` },
-          { value: "acknowledged", label: `In progress (${mine.filter((e) => e.status === "acknowledged").length})` },
+          { value: "open", label: "New", count: mine.filter((e) => e.status === "open").length },
+          { value: "acknowledged", label: "In progress", count: mine.filter((e) => e.status === "acknowledged").length },
           { value: "resolved", label: "Resolved" },
           { value: "all", label: "All" },
         ]} />
@@ -124,7 +124,7 @@ function ReviewQueue() {
             rowKey={(e) => e.escalation_id}
             empty={{ title: "Nothing here", description: "No reviews match these filters." }}
             columns={[
-              { key: "p", header: "Priority", render: (e) => <Badge status={e.priority} /> },
+              { key: "p", header: "Priority", render: (e) => <Badge status={e.priority} dot /> },
               { key: "d", header: "Decision and reasons", render: (e) => (
                 <>
                   <div className="cell-primary">{e.audit_ref ? <Link href={`/decisions/${e.audit_ref}`} style={{ color: "inherit" }}>{e.objective}</Link> : e.objective}</div>
@@ -134,11 +134,11 @@ function ReviewQueue() {
               { key: "s", header: "Sector", render: (e) => humanize(e.sector) },
               { key: "r", header: "Assigned role", render: (e) => humanize(e.assigned_role) },
               { key: "t", header: "Deadline", render: (e) => <Deadline e={e} now={now} /> },
-              { key: "st", header: "Status", render: (e) => <Badge status={e.status} /> },
+              { key: "st", header: "Status", render: (e) => <Badge status={e.status} dot /> },
               { key: "a", header: "Actions", render: (e) => e.status === "resolved" ? (
                 <span className="t-small t-muted" title={e.resolution ?? ""}>By {who(e.resolved_by)}</span>
               ) : (
-                <div className="row" style={{ flexWrap: "nowrap" }}>
+                <div className="row row-actions" style={{ flexWrap: "nowrap" }}>
                   {e.status === "open" ? (
                     <button type="button" className="btn btn-compact" disabled={busy === e.escalation_id} onClick={() => void act(e, "acknowledge")}>Acknowledge</button>
                   ) : null}

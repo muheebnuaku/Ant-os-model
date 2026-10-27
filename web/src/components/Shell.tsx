@@ -199,8 +199,11 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="route-progress" data-active={navigating} aria-hidden />
       <aside className="sidebar" data-open={navOpen} aria-label="Main navigation">
         <div className="wordmark">
-          <strong>ANT-OS Ω</strong>
-          <span>{me.nation_id === "GH" ? "Ghana" : me.nation_id ?? "All nations"} · AFRICA-OS Ω</span>
+          <span className="brand-mark" aria-hidden>Ω</span>
+          <span className="wordmark-text">
+            <strong>ANT-OS Ω</strong>
+            <span>{me.nation_id === "GH" ? "Ghana" : me.nation_id ?? "All nations"} · AFRICA-OS Ω</span>
+          </span>
         </div>
         <nav>
           {NAV.map(({ group, items }) => {
@@ -211,7 +214,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <div className="nav-group-label">{group}</div>
                 {visible.map(({ href, label, icon: Icon, count }) => (
                   <Link key={href} href={href} className="nav-item" aria-current={isActive(href) ? "page" : undefined} title={label}>
-                    <Icon size={20} strokeWidth={1.75} aria-hidden />
+                    <Icon size={20} strokeWidth={1.5} aria-hidden />
                     <span className="nav-label">{label}</span>
                     {count && queue.data?.length ? <span className="nav-count" aria-label={`${queue.data.length} waiting`}>{queue.data.length}</span> : null}
                   </Link>
@@ -222,17 +225,20 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
         <div className="sidebar-foot">
           <Link href="/help" className="nav-item" aria-current={pathname === "/help" ? "page" : undefined} title="Help">
-            <HelpCircle size={20} strokeWidth={1.75} aria-hidden />
+            <HelpCircle size={20} strokeWidth={1.5} aria-hidden />
             <span className="nav-label">Help</span>
           </Link>
           <button type="button" className="nav-item collapse-toggle" onClick={toggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-            {collapsed ? <PanelLeftOpen size={20} strokeWidth={1.75} aria-hidden /> : <PanelLeftClose size={20} strokeWidth={1.75} aria-hidden />}
+            {collapsed ? <PanelLeftOpen size={20} strokeWidth={1.5} aria-hidden /> : <PanelLeftClose size={20} strokeWidth={1.5} aria-hidden />}
             <span className="nav-label">Collapse sidebar</span>
           </button>
-          <div className="sidebar-user">
-            <strong>{name}</strong>
-            <span>{roles}</span>
+          <div className="sidebar-user" title={`${name} · ${roles}`}>
+            <span className="avatar" aria-hidden>{name.slice(0, 2).toUpperCase()}</span>
+            <span className="sidebar-user-text">
+              <strong>{name}</strong>
+              <span>{roles}</span>
+            </span>
           </div>
         </div>
       </aside>
@@ -241,32 +247,32 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="main">
         <header className="header">
           <button type="button" className="icon-button menu-toggle" aria-label="Open navigation" onClick={() => setNavOpen(true)}>
-            <Menu size={20} strokeWidth={1.75} />
+            <Menu size={20} strokeWidth={1.5} />
           </button>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             {crumbs.map((c, i) => (
               <Fragment key={`${c.label}${i}`}>
-                {i > 0 ? <span aria-hidden>/</span> : null}
+                {i > 0 ? <span className="breadcrumb-sep" aria-hidden>/</span> : null}
                 {i === crumbs.length - 1 ? <span aria-current="page">{c.label}</span> : c.href ? <Link href={c.href}>{c.label}</Link> : <span>{c.label}</span>}
               </Fragment>
             ))}
           </nav>
           <div className="header-spacer" />
           <button type="button" className="search-button" onClick={() => setPalette(true)} aria-label="Search (Ctrl+K)">
-            <Search size={16} strokeWidth={1.75} aria-hidden />
+            <Search size={16} strokeWidth={1.5} aria-hidden />
             <span className="search-label">Search decisions, sectors, records…</span>
             <kbd>Ctrl K</kbd>
           </button>
           {n ? (
             <Link href={can(CAN.audit) ? "/audit" : "/help"} className="node-status" title={sealed ? `Last sealed ${relative(n.last_anchor_at!)} · ${n.entries_since_anchor} records since` : "Records have not been sealed yet"}>
-              {sealed ? <ShieldCheck size={16} strokeWidth={1.75} style={{ color: "var(--good)" }} aria-hidden /> : <ShieldAlert size={16} strokeWidth={1.75} style={{ color: "var(--warning)" }} aria-hidden />}
+              {sealed ? <ShieldCheck size={16} strokeWidth={1.5} style={{ color: "var(--good)" }} aria-hidden /> : <ShieldAlert size={16} strokeWidth={1.5} style={{ color: "var(--warning)" }} aria-hidden />}
               <span className="node-label">{sealed ? `Records verified · sealed ${relative(n.last_anchor_at!)}` : "Records not yet sealed"}</span>
             </Link>
           ) : null}
           <div ref={menuRef} style={{ position: "relative" }}>
             <button type="button" className="user-button" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
               <span className="avatar" aria-hidden>{name.slice(0, 2).toUpperCase()}</span>
-              <ChevronDown size={16} strokeWidth={1.75} aria-hidden />
+              <ChevronDown size={16} strokeWidth={1.5} aria-hidden />
               <span className="sr-only">Account menu</span>
             </button>
             {menu ? (
@@ -279,7 +285,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <div className="menu-label">Appearance</div>
                 {([["system", "Match device", Monitor], ["light", "Light", Sun], ["dark", "Dark", Moon]] as const).map(([v, t, Icon]) => (
                   <button key={v} type="button" role="menuitemradio" aria-checked={theme === v} className="menu-item" onClick={() => chooseTheme(v)}>
-                    <Icon size={16} strokeWidth={1.75} aria-hidden /> {t}
+                    <Icon size={16} strokeWidth={1.5} aria-hidden /> {t}
                     {theme === v ? <span style={{ marginLeft: "auto" }} aria-hidden>✓</span> : null}
                   </button>
                 ))}
@@ -291,7 +297,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 </div>
                 <hr className="divider" style={{ margin: "4px 0" }} />
                 <button type="button" role="menuitem" className="menu-item" onClick={signOut}>
-                  <LogOut size={16} strokeWidth={1.75} aria-hidden /> Sign out
+                  <LogOut size={16} strokeWidth={1.5} aria-hidden /> Sign out
                 </button>
               </div>
             ) : null}

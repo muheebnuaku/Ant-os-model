@@ -89,7 +89,7 @@ export default function AccessPage() {
               { key: "n", header: "Name", render: (k) => <><div className="cell-primary">{k.name}</div><div className="cell-secondary">Issued by {who(k.created_by)}</div></> },
               { key: "r", header: "Roles", render: (k) => k.roles.map(humanize).join(", ") },
               { key: "c", header: "Issued", render: (k) => <Time iso={k.created_at} now={now} /> },
-              { key: "s", header: "Status", render: (k) => <Badge status={k.revoked_at ? "revoked" : "active"} /> },
+              { key: "s", header: "Status", render: (k) => <Badge status={k.revoked_at ? "revoked" : "active"} dot /> },
               { key: "a", header: "", render: (k) => (k.revoked_at ? null : <button type="button" className="btn btn-compact btn-danger" onClick={() => setRevoking(k)}>Revoke</button>) },
             ]} />
         </div>
@@ -123,7 +123,7 @@ export default function AccessPage() {
           <Notice tone="warning">Copy this key now. It will not be shown again.</Notice>
           <pre className="json" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{issued.token}</pre>
           <div className="dialog-actions">
-            <button type="button" className="btn" onClick={() => { void navigator.clipboard.writeText(issued.token); setCopied(true); }}><Copy size={16} strokeWidth={1.75} aria-hidden />{copied ? "Copied" : "Copy key"}</button>
+            <button type="button" className="btn" onClick={() => { void navigator.clipboard.writeText(issued.token); setCopied(true); }}><Copy size={16} strokeWidth={1.5} aria-hidden />{copied ? "Copied" : "Copy key"}</button>
             <CancelButton className="btn btn-primary">Done</CancelButton>
           </div>
         </Dialog>

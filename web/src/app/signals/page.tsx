@@ -90,7 +90,7 @@ function Signals() {
               { key: "k", header: "Kind", render: (s) => SOURCE_KIND[s.source_type] ?? humanize(s.source_type) },
               { key: "o", header: "Observed", render: (s) => <Time iso={s.observed_at} now={now} /> },
               { key: "v", header: "Received", render: (s) => <Time iso={s.received_at} now={now} /> },
-              { key: "f", header: "Freshness", numeric: true, render: (s) => (s.stale ? <Badge status="decayed">{pct(s.freshness)}</Badge> : <Meter value={s.freshness} />) },
+              { key: "f", header: "Freshness", numeric: true, render: (s) => (s.stale ? <Badge status="decayed" dot>{`Stale · ${pct(s.freshness)}`}</Badge> : <Meter value={s.freshness} width={48} />) },
             ]}
           />
         </div>

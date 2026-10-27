@@ -30,13 +30,23 @@ export function useTooltip() {
   return { show, hide, node };
 }
 
+/* Five results folded into three colour classes: in a grid every cell can
+   neighbour every other, and only three hues stay distinguishable for all
+   readers (validated all-pairs, both themes). Tooltips and the table view
+   still give each cell's exact result. */
 const STATE_FILL: Record<string, string> = {
-  trusted: "var(--good)",
-  provisional: "var(--accent)",
-  decayed: "var(--warning)",
-  conflicted: "var(--serious)",
-  blocked: "var(--critical)",
+  trusted: "var(--heat-ok)",
+  provisional: "var(--heat-ok)",
+  decayed: "var(--heat-care)",
+  conflicted: "var(--heat-care)",
+  blocked: "var(--heat-blocked)",
 };
+
+const HEAT_CLASSES = [
+  { fill: "var(--heat-ok)", label: "Trusted or provisional" },
+  { fill: "var(--heat-care)", label: "Decayed or conflicted" },
+  { fill: "var(--heat-blocked)", label: "Blocked" },
+];
 
 // ── Sparkline: one series, named by its label ───────────────
 
@@ -62,9 +72,9 @@ export function Sparkline({ values, starts, what, height = 32 }: { values: numbe
         aria-label={`${what}: ${values.reduce((a, b) => a + b, 0)} in the window`}
         onMouseMove={onMove} onMouseLeave={() => { setHover(null); hide(); }} style={{ display: "block", overflow: "visible" }}>
         <line x1="0" x2={w} y1={height - 2} y2={height - 2} stroke="var(--grid)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        <polyline points={points} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <polyline points={points} fill="none" stroke="var(--chart-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         {hover !== null ? (
-          <circle cx={hover * step} cy={y(values[hover] ?? 0)} r="4" fill="var(--accent)" stroke="var(--surface)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+          <circle cx={hover * step} cy={y(values[hover] ?? 0)} r="4" fill="var(--chart-1)" stroke="var(--surface)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
         ) : null}
       </svg>
       {node}
@@ -80,7 +90,18 @@ export interface HeatRow {
   buckets: { start: string; signals: number; decisions: number; worst_state: string | null }[];
 }
 
-export function ActivityHeatmap({ rows, bucketMinutes, onRowClick }: { rows: HeatRow[]; bucketMinutes: number; onRowClick?: (key: string) => void }) {
+/** The heatmap's legend, for placing in a section header. */
+export function HeatLegend() {
+  return (
+    <div className="legend" aria-label="Legend">
+      {HEAT_CLASSES.map((c) => <span key={c.label}><i className="swatch" style={{ background: c.fill }} />{c.label}</span>)}
+      <span><i className="swatch" style={{ background: "var(--heat-signals)" }} />Evidence only</span>
+      <span><i className="swatch" style={{ background: "var(--heat-empty)", boxShadow: "inset 0 0 0 1px var(--border)" }} />No activity</span>
+    </div>
+  );
+}
+
+export function ActivityHeatmap({ rows, bucketMinutes, onRowClick, showLegend = true }: { rows: HeatRow[]; bucketMinutes: number; onRowClick?: (key: string) => void; showLegend?: boolean }) {
   const { show, hide, node } = useTooltip();
   const [asTable, setAsTable] = useState(false);
   const axis = rows[0]?.buckets ?? [];
@@ -97,11 +118,7 @@ export function ActivityHeatmap({ rows, bucketMinutes, onRowClick }: { rows: Hea
   return (
     <div className="stack">
       <div className="between" style={{ flexWrap: "wrap" }}>
-        <div className="legend" aria-label="Legend">
-          {Object.entries(STATE_FILL).map(([s, c]) => <span key={s}><i className="swatch" style={{ background: c }} />{statusLabel(s)}</span>)}
-          <span><i className="swatch" style={{ background: "var(--heat-signals)" }} />Evidence only</span>
-          <span><i className="swatch" style={{ background: "var(--heat-empty)", outline: "1px solid var(--border)" }} />No activity</span>
-        </div>
+        {showLegend ? <HeatLegend /> : <span />}
         <button type="button" className="btn btn-tertiary btn-compact" onClick={() => setAsTable((t) => !t)}>
           {asTable ? "View as chart" : "View as table"}
         </button>
@@ -174,8 +191,8 @@ export function ConfidenceBreakdown({ inputs, weights, confidence }: { inputs: R
     <div className="stack">
       <div className="between" style={{ flexWrap: "wrap" }}>
         <div className="legend">
-          <span><i className="swatch" style={{ background: "var(--accent)" }} />Adds confidence</span>
-          <span><i className="swatch" style={{ background: "var(--negative)" }} />Deducted</span>
+          <span><i className="swatch" style={{ background: "var(--chart-1)" }} />Adds confidence</span>
+          <span><i className="swatch" style={{ background: "var(--chart-negative)" }} />Deducted</span>
         </div>
         <button type="button" className="btn btn-tertiary btn-compact" onClick={() => setAsTable((t) => !t)}>
           {asTable ? "View as chart" : "View as table"}
@@ -214,7 +231,7 @@ export function ConfidenceBreakdown({ inputs, weights, confidence }: { inputs: R
                 onMouseMove={(e) => show(e, content)} onFocus={(e) => show(e, content)} onMouseLeave={hide} onBlur={hide}>
                 <span className="t-small">{r.name}</span>
                 <div style={{ height: 8, background: "var(--surface-subtle)", borderRadius: 4 }}>
-                  <div style={{ width: `${(r.value / scale) * 100}%`, height: "100%", borderRadius: 4, background: r.negative ? "var(--negative)" : "var(--accent)" }} />
+                  <div style={{ width: `${(r.value / scale) * 100}%`, height: "100%", borderRadius: 4, background: r.negative ? "var(--chart-negative)" : "var(--chart-1)" }} />
                 </div>
                 <span className="t-small t-num" style={{ textAlign: "right" }}>{r.negative ? "−" : "+"}{pct(r.value, 1)}</span>
               </div>

@@ -75,12 +75,13 @@ export function statusLabel(status: string | null | undefined): string {
   return STATUS[status]?.label ?? humanize(status);
 }
 
-export function Badge({ status, tone, children, large = false }: { status?: string | null; tone?: Tone; children?: ReactNode; large?: boolean }) {
+export function Badge({ status, tone, children, large = false, dot = false }: { status?: string | null; tone?: Tone; children?: ReactNode; large?: boolean; dot?: boolean }) {
   const t = tone ?? toneOf(status);
+  if (dot) return <span className="badge-dot" data-tone={t}>{children ?? statusLabel(status)}</span>;
   const Icon = TONE_ICON[t];
   return (
     <span className={`badge${large ? " badge-lg" : ""}`} data-tone={t}>
-      <Icon size={large ? 16 : 14} strokeWidth={1.75} aria-hidden />
+      <Icon size={large ? 16 : 14} strokeWidth={1.5} aria-hidden />
       {children ?? statusLabel(status)}
     </span>
   );
@@ -89,7 +90,7 @@ export function Badge({ status, tone, children, large = false }: { status?: stri
 export function ToneIcon({ tone, size = 16 }: { tone: Tone; size?: number }) {
   const Icon = TONE_ICON[tone];
   const color = tone === "info" ? "var(--accent)" : tone === "neutral" ? "var(--text-muted)" : `var(--${tone})`;
-  return <Icon size={size} strokeWidth={1.75} style={{ color }} aria-hidden />;
+  return <Icon size={size} strokeWidth={1.5} style={{ color }} aria-hidden />;
 }
 
 // ── Formatting (§9) ────────────────────────────────────────
@@ -165,13 +166,28 @@ export function Kpis({ children, count }: { children: ReactNode; count: number }
   );
 }
 
-export function Kpi({ label, value, context }: { label: string; value: ReactNode; context?: ReactNode }) {
+export function Kpi({ label, value, unit, context }: { label: string; value: ReactNode; unit?: string; context?: ReactNode }) {
   return (
     <div className="kpi">
       <span className="kpi-label">{label}</span>
-      <span className="kpi-value">{value}</span>
+      {/* Keyed by value: a change crossfades instead of jumping. */}
+      <span className="kpi-value num-fade" key={typeof value === "string" || typeof value === "number" ? String(value) : undefined}>
+        {value}
+        {unit ? <span className="unit">{unit}</span> : null}
+      </span>
       {context ? <span className="kpi-context">{context}</span> : null}
     </div>
+  );
+}
+
+/** A change against a previous period. Coloured only when the direction is
+ *  unambiguously good or bad for that measure; otherwise neutral. */
+export function Delta({ value, goodWhen }: { value: number; goodWhen?: "up" | "down" }) {
+  const tone = value === 0 || !goodWhen ? "neutral" : (value > 0) === (goodWhen === "up") ? "good" : "critical";
+  return (
+    <span className="delta" data-tone={tone}>
+      {value > 0 ? "▲" : value < 0 ? "▼" : "–"} {value > 0 ? "+" : ""}{value}
+    </span>
   );
 }
 
@@ -207,9 +223,9 @@ export function ErrorNotice({ error }: { error: Error | null | undefined }) {
 export function EmptyState({ icon: Icon = CircleDashed, title, children, action }: { icon?: LucideIcon; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="empty">
-      <Icon size={24} strokeWidth={1.75} aria-hidden />
-      <span className="t-strong">{title}</span>
-      {children ? <span className="t-small t-muted">{children}</span> : null}
+      <span className="empty-icon" aria-hidden><Icon strokeWidth={1.5} /></span>
+      <span className="title">{title}</span>
+      {children ? <span className="desc">{children}</span> : null}
       {action ? <div style={{ marginTop: 12 }}>{action}</div> : null}
     </div>
   );
@@ -256,13 +272,14 @@ export function Segmented<T extends string | number>({ options, value, onChange,
   );
 }
 
-export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: string; count?: number }[]; value: T; onChange: (v: T) => void }) {
   const { ref, box } = useSlidingMarker(value);
   return (
     <div className="tabs" role="tablist" ref={ref}>
       {tabs.map((t) => (
         <button key={t.value} data-key={t.value} type="button" role="tab" className="tab" aria-selected={t.value === value} onClick={() => onChange(t.value)}>
           {t.label}
+          {t.count !== undefined ? <span className="count">{t.count}</span> : null}
         </button>
       ))}
       {box ? <span className="tab-indicator" aria-hidden style={{ width: box.width, transform: `translateX(${box.left}px)` }} /> : null}
@@ -310,7 +327,7 @@ export function Drawer({ title, eyebrow, status, onClose, children }: { title: s
               {status ? <div className="row">{status}</div> : null}
             </div>
             <button type="button" className="icon-button" onClick={close} aria-label="Close" autoFocus>
-              <X strokeWidth={1.75} />
+              <X strokeWidth={1.5} />
             </button>
           </div>
           <div className="drawer-body">{children}</div>
@@ -341,12 +358,12 @@ export function CancelButton({ children = "Cancel", className = "btn" }: { child
   return <button type="button" className={className} onClick={close}>{children}</button>;
 }
 
-export function Meter({ value, tone }: { value: number | null | undefined; tone?: "critical" | "warning" }) {
+export function Meter({ value, tone, width = 64 }: { value: number | null | undefined; tone?: "critical" | "warning"; width?: number }) {
   if (value === null || value === undefined) return <span className="t-muted">Not recorded</span>;
   return (
     <span className="meter-row">
-      <span className="meter" data-tone={tone} style={{ width: 64 }} aria-hidden><span style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} /></span>
-      <span className="t-num">{pct(value)}</span>
+      <span className="meter" data-tone={tone} style={{ width, minWidth: width }} aria-hidden><span style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} /></span>
+      <span className="t-num" style={{ minWidth: 36, textAlign: "right" }}>{pct(value)}</span>
     </span>
   );
 }

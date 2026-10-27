@@ -29,18 +29,21 @@ export default function LoginPage() {
   return (
     <main className="login">
       <div className="card login-card">
-        <div className="wordmark" style={{ padding: 0, border: 0, margin: 0 }}>
-          <strong style={{ fontSize: 20 }}>ANT-OS Ω</strong>
-          <span>AFRICA-OS Ω decision intelligence</span>
+        <div className="wordmark" style={{ padding: 0 }}>
+          <span className="brand-mark" aria-hidden>Ω</span>
+          <span className="wordmark-text">
+            <strong>ANT-OS Ω</strong>
+            <span>AFRICA-OS Ω decision intelligence</span>
+          </span>
         </div>
-        <h1 style={{ fontSize: 22, lineHeight: "30px" }}>Sign in</h1>
+        <h1 style={{ fontSize: 20, lineHeight: "28px" }}>Sign in to ANT-OS</h1>
         <form className="stack" onSubmit={submit}>
           <label className="field">
             <span>Access key</span>
             <input className="control" type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKeyValue(e.target.value)} required autoFocus />
           </label>
           {error ? <Notice tone="critical">{error}</Notice> : null}
-          <button className="btn btn-primary" type="submit" disabled={busy || !key.trim()}>{busy ? "Signing in…" : "Sign in"}</button>
+          <button className="btn btn-primary" type="submit" disabled={busy || !key.trim()} aria-busy={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
         <p className="t-caption t-muted">Your key is kept only in this browser tab and cleared when you close it.</p>
       </div>

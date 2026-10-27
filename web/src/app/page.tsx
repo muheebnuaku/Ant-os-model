@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
-import { ActivityHeatmap, Sparkline } from "@/components/charts";
+import { ActivityHeatmap, HeatLegend, Sparkline } from "@/components/charts";
 import { DataTable } from "@/components/DataTable";
 import {
   Badge,
   ContextBar,
+  Delta,
   Drawer,
   EmptyState,
   ErrorNotice,
@@ -146,7 +147,7 @@ function Briefing() {
             <Kpi label="Waiting for review" value={waiting} context={`${p!.at_risk_escalations} due within 30 min`} />
             <Kpi label="Overdue reviews" value={overdue} context={overdue ? <Badge status="overdue">Past deadline</Badge> : "None past deadline"} />
             <Kpi label={`Decisions · last ${windowText(hours)}`} value={p!.decisions_in_window}
-              context={`${diff === 0 ? "No change" : `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`} vs previous ${windowText(hours)}`} />
+              context={<><Delta value={diff} /> vs previous {windowText(hours)}</>} />
             <Kpi label="Cleared to act" value={p!.decisions_in_window ? pct(p!.allowed_for_action / p!.decisions_in_window) : "No decisions"}
               context={`${p!.allowed_for_action} of ${p!.decisions_in_window} decisions`} />
           </Kpis>
@@ -155,7 +156,7 @@ function Briefing() {
             <div className="card card-pad">
               <ul className="summary-list">
                 {situation(data, queue, hours, now).map((s, i) => (
-                  <li key={i}><Badge tone={s.tone}>{s.tone === "good" ? "Stable" : s.tone === "neutral" ? "Note" : s.tone === "critical" ? "Urgent" : "Soon"}</Badge><span>{s.text}</span></li>
+                  <li key={i}><Badge tone={s.tone} dot>{s.tone === "good" ? "Stable" : s.tone === "neutral" ? "Note" : s.tone === "critical" ? "Urgent" : "Soon"}</Badge><span>{s.text}</span></li>
                 ))}
               </ul>
             </div>
@@ -172,7 +173,7 @@ function Briefing() {
                   empty={{ title: "Nothing is waiting", description: "New reviews appear here as soon as they are raised." }}
                   onRowClick={(e) => router.push(e.audit_ref ? `/decisions/${e.audit_ref}` : "/escalations")}
                   columns={[
-                    { key: "p", header: "Priority", render: (e) => <Badge status={e.priority} /> },
+                    { key: "p", header: "Priority", render: (e) => <Badge status={e.priority} dot /> },
                     { key: "d", header: "Decision", render: (e) => <><div className="cell-primary">{e.objective}</div><div className="cell-secondary">{e.reasons[0]?.message}</div></> },
                     { key: "s", header: "Sector", render: (e) => humanize(e.sector) },
                     { key: "a", header: "Assigned to", render: (e) => humanize(e.assigned_role) },
@@ -192,8 +193,8 @@ function Briefing() {
                     {sectors.map((s) => (
                       <tr key={s.sector} data-clickable="true" onClick={() => setSector(s.sector)}>
                         <td data-label="Sector"><button type="button" className="heat-label t-strong" onClick={() => setSector(s.sector)}>{sectorName(s.sector_name)}</button></td>
-                        <td data-label="Status"><Badge status={s.status} /></td>
-                        <td data-label="Freshness" className="num">{s.mean_freshness === null ? <span className="t-muted">No data</span> : pct(s.mean_freshness)}</td>
+                        <td data-label="Status"><Badge status={s.status} dot /></td>
+                        <td data-label="Freshness" className="num">{s.mean_freshness === null ? <span className="t-muted">No data</span> : <Meter value={s.mean_freshness} width={48} />}</td>
                         <td data-label="Reviews" className="num">{Object.values(s.open_escalations).reduce((a, b) => a + b, 0)}</td>
                       </tr>
                     ))}
@@ -203,9 +204,9 @@ function Briefing() {
             </Section>
           </div>
 
-          <Section title="Activity by sector" description={`Last ${windowText(hours)}. Each cell shows the weakest result among that period's decisions.`}>
+          <Section title="Activity by sector" description={`Last ${windowText(hours)}. Each cell shows the weakest result among that period's decisions.`} actions={<HeatLegend />}>
             <div className="card card-pad">
-              <ActivityHeatmap bucketMinutes={data.bucket_minutes} onRowClick={setSector}
+              <ActivityHeatmap bucketMinutes={data.bucket_minutes} onRowClick={setSector} showLegend={false}
                 rows={sectors.map((s) => ({ key: s.sector, label: sectorName(s.sector_name), buckets: s.timeline }))} />
             </div>
           </Section>
@@ -277,7 +278,7 @@ function SectorDrawer({ s, queue, now, onClose }: { s: SectorSummary | undefined
             empty={{ title: "No decisions yet" }}
             columns={[
               { key: "d", header: "Decision", render: (d) => <Link href={`/decisions/${d.audit_ref}`} className="cell-primary">{d.objective}</Link> },
-              { key: "r", header: "Result", render: (d) => <Badge status={d.validation_state} /> },
+              { key: "r", header: "Result", render: (d) => <Badge status={d.validation_state} dot /> },
               { key: "w", header: "When", render: (d) => <Time iso={d.created_at} now={now} /> },
             ]} />
         </div>

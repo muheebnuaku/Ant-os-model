@@ -73,7 +73,11 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
-      {footer ? <div className="table-foot">{footer}</div> : null}
+      <div className="table-foot">
+        <span className="t-num">Showing {rows.length.toLocaleString()} {rows.length === 1 ? "item" : "items"}</span>
+        <span className="spacer" />
+        {footer}
+      </div>
     </div>
   );
 }

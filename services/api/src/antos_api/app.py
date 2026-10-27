@@ -419,6 +419,8 @@ def _routes(app: FastAPI) -> None:
         return [{"sector_id": p.sector_id, "sector_name": p.sector_name,
                  "priority_24hae": p.priority_24hae, "half_life_hours": p.half_life_hours,
                  "model_route": p.model_route,
+                 "validation_thresholds": {"trusted": p.validation_thresholds.trusted,
+                                           "provisional": p.validation_thresholds.provisional},
                  "signal_types": {t: s.compare_field for t, s in p.signal_types.items()}}
                 for p in profile.packs.values()]
 

@@ -20,6 +20,7 @@ import {
   absolute,
   humanize,
   pct,
+  statusLabel,
   type Tone,
 } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -129,7 +130,9 @@ function Decision() {
       ? { tone: "warning", text: "A person must review this before anyone acts." }
       : { tone: "neutral", text: "Not enough trustworthy evidence to act." };
   const verified = replay ? replay.match && replay.projection_matches_audit : null;
-  const fieldFor = (type: string) => sectors.data?.find((x) => x.sector_id === d.sector)?.signal_types[type] ?? null;
+  const sector = sectors.data?.find((x) => x.sector_id === d.sector);
+  const fieldFor = (type: string) => sector?.signal_types[type] ?? null;
+  const thresholds = sector?.validation_thresholds;
 
   return (
     <div className="page">
@@ -137,8 +140,8 @@ function Decision() {
         title={d.objective}
         description={<>{humanize(d.sector)} · {d.nation_id === "GH" ? "Ghana" : d.nation_id} · evaluated {absolute(s.evaluated_at)}</>}
         actions={<>
-          {auditor ? <button type="button" className="btn" onClick={() => void verify()} disabled={verifying}><ShieldCheck size={16} strokeWidth={1.75} aria-hidden />{verifying ? "Verifying…" : "Verify decision"}</button> : null}
-          <button type="button" className="btn" onClick={exportRecord}><Download size={16} strokeWidth={1.75} aria-hidden />Export</button>
+          {auditor ? <button type="button" className="btn" onClick={() => void verify()} disabled={verifying}><ShieldCheck size={16} strokeWidth={1.5} aria-hidden />{verifying ? "Verifying…" : "Verify decision"}</button> : null}
+          <button type="button" className="btn" onClick={exportRecord}><Download size={16} strokeWidth={1.5} aria-hidden />Export</button>
         </>}
       />
 
@@ -151,27 +154,27 @@ function Decision() {
       ) : null}
       <ErrorNotice error={error} />
 
-      <section className="card card-pad" aria-label="Verdict">
+      <section className="card card-pad stack" aria-label="Verdict" style={{ gap: 20 }}>
         <div className="layout-main" style={{ gap: 32 }}>
-          <div className="stack">
-            <div className="row" style={{ gap: 12 }}>
-              <span className="t-verdict">ANT-OS advises</span>
-              <Badge status={rec.action} large />
+          <div className="stack-sm">
+            <span className="t-caption t-muted">ANT-OS advises</span>
+            <div className="row" style={{ gap: 10 }}>
+              <span className="t-verdict">{statusLabel(rec.action)}</span>
+              <Badge status={rec.action} />
             </div>
-            <p style={{ fontSize: 15, lineHeight: "24px" }}>{rec.primary_recommendation}</p>
-            <Notice tone={verdict.tone}>{verdict.text}</Notice>
+            <p style={{ fontSize: 15, lineHeight: "24px", maxWidth: "62ch" }}>{rec.primary_recommendation}</p>
           </div>
-          <div className="stack" style={{ borderLeft: "1px solid var(--border)", paddingLeft: 24 }}>
-            <div>
-              <div className="kpi-label">Confidence</div>
-              <div className="kpi-value">{pct(d.confidence)}</div>
-            </div>
+          <div className="stack-sm" style={{ borderLeft: "1px solid var(--border)", paddingLeft: 24 }}>
+            <span className="kpi-label">Confidence</span>
+            <span className="kpi-value">{pct(d.confidence)}</span>
+            <ConfidenceBar value={d.confidence} thresholds={thresholds} />
             <div className="row"><span className="t-small t-muted">Evidence result</span><Badge status={d.validation_state} /></div>
-            <div className="t-small t-muted">
-              Advice written by {byModel ? <>{rec.produced_by.split(":").slice(2).join(":")} (checked by the rules)</> : "the built-in rules"}
-            </div>
+            <span className="t-small t-muted">
+              Advice written by {byModel ? <>{rec.produced_by.split(":").slice(2).join(":")}, checked by the rules</> : "the built-in rules"}
+            </span>
           </div>
         </div>
+        <Notice tone={verdict.tone}>{verdict.text}</Notice>
       </section>
 
       <div className="stack">
@@ -283,22 +286,26 @@ function Decision() {
               <Section title="The 19-step trail" description="Select a step to see what it recorded.">
                 <div className="card card-pad">
                   {entry.data ? (
-                    <div className="grid-2" style={{ gap: 32 }}>
+                    <ol className="timeline" style={{ listStyle: "none", margin: 0, padding: 0 }}>
                       {GROUPS.map((g) => (
-                        <div key={g.title} className="trail-group">
-                          <h3 style={{ marginBottom: 4 }}>{g.title}</h3>
+                        <li key={g.title} className="timeline-group">
+                          <div className="timeline-title">{g.title}</div>
                           {g.steps.map((n) => {
                             const step = entry.data!.payload.audit.trace.find((t) => t.step === n);
                             return (
-                              <details key={n} className="trail-step">
-                                <summary><span className="trail-num">{n}</span><span>{STEP_NAMES[n]}</span><ChevronRight size={16} strokeWidth={1.75} aria-hidden /></summary>
+                              <details key={n} className="timeline-step" data-flag={n === 14 ? "advice" : undefined}>
+                                <summary>
+                                  <span className="timeline-node" aria-hidden>{n}</span>
+                                  <span>{STEP_NAMES[n]}</span>
+                                  <ChevronRight className="chev" size={16} strokeWidth={1.5} aria-hidden />
+                                </summary>
                                 <pre className="json">{JSON.stringify(step?.detail ?? {}, null, 2)}</pre>
                               </details>
                             );
                           })}
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ol>
                   ) : entry.error ? <ErrorNotice error={entry.error} /> : <SkeletonRows rows={5} />}
                 </div>
               </Section>
@@ -309,7 +316,7 @@ function Decision() {
                 </div>
               </Section>
               <details className="disclosure">
-                <summary><ChevronRight size={16} strokeWidth={1.75} aria-hidden />Technical record</summary>
+                <summary><ChevronRight size={16} strokeWidth={1.5} aria-hidden />Technical record</summary>
                 <div className="disclosure-body">
                   {entry.data ? (
                     <>
@@ -358,4 +365,20 @@ function checks(d: DecisionDetail): { name: string; result: string; finding: str
     { name: "Local fit", result: d.local_fit_passed === null ? "not_assessed" : d.local_fit_passed ? "passed" : "failed",
       finding: d.local_fit_passed === null ? "Not assessed for this decision." : d.local_fit_passed ? "Fits local law, language and infrastructure." : `Concerns: ${d.local_fit_report.dimensions_failed.map(humanize).join(", ")}.` },
   ];
+}
+
+/** Confidence on a bar marked at the sector's provisional and trusted thresholds. */
+function ConfidenceBar({ value, thresholds }: { value: number; thresholds?: { trusted: number; provisional: number } }) {
+  return (
+    <div className="conf-bar" role="img"
+      aria-label={`Confidence ${pct(value)}${thresholds ? `; provisional from ${pct(thresholds.provisional)}, trusted from ${pct(thresholds.trusted)}` : ""}`}>
+      <span className="fill" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+      {thresholds ? (
+        <>
+          <span className="mark" style={{ left: `${thresholds.provisional * 100}%` }}><span>Provisional</span></span>
+          <span className="mark" style={{ left: `${thresholds.trusted * 100}%` }}><span>Trusted</span></span>
+        </>
+      ) : null}
+    </div>
+  );
 }
