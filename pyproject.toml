@@ -1,0 +1,56 @@
+[project]
+name = "ant-os"
+version = "0.1.0"
+description = "ANT-OS Ω monorepo — sovereign, validation-first reasoning layer"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["packages/*", "services/*"]
+
+[tool.uv.sources]
+antos-core = { workspace = true }
+antos-api = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "antos-core",
+    "antos-api",
+    "pytest>=8.3",
+    "hypothesis>=6.112",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "types-PyYAML",
+    "anyio>=4.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+# Formulas in docstrings/comments use ×, − and en dashes on purpose.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests and the demo data set read better with one case per line.
+"services/api/tests/*" = ["E501"]
+"services/api/src/antos_api/demo.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["antos_core", "antos_api"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+packages = ["antos_core", "antos_api"]
+mypy_path = "packages/antos-core/src:services/api/src"
+
+[[tool.mypy.overrides]]
+module = ["arq.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["packages/antos-core/tests", "services/api/tests"]
+# Database tests run when ANTOS_TEST_DATABASE_URL points at a disposable database.
+addopts = "-q"

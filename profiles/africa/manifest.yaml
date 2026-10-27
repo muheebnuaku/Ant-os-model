@@ -1,0 +1,123 @@
+# AFRICA-OS Ω profile — engine-wide manifest (runs on ANT-OS Ω core).
+# Source: AFRICA_OS_OMEGA_master_manifest_v1_0 + ANT_OS_OMEGA unified manifest v1.2.
+# Decisions marked S1–S9 are documented in docs/DECISIONS.md and await author sign-off.
+# Creator: Dr. David King Boison — attribution required in all deployments.
+
+manifest:
+  name: "AFRICA-OS Ω"
+  version: "1.3.0-draft"
+
+  # S2: the sector domain modifier is NOT multiplied into confidence by default.
+  # It is used as the contradiction severity sensitivity instead (see sector packs).
+  # Set to "multiply" to reproduce the v1.0–v1.2 reference behaviour.
+  domain_modifier_mode: none
+
+  # Cross-signal consistency used when no comparable signal pairs exist
+  # (single-source evidence). Matches the reference implementation's 0.50.
+  neutral_consistency: 0.50
+
+  # S3: thresholds from the academic paper (stricter than manifest v1.2's 0.20/0.50/0.80).
+  # severity < 0.20 → minor · 0.20–0.49 → moderate · ≥ 0.50 → severe
+  contradiction:
+    moderate_from: 0.20
+    severe_from: 0.50
+
+  # Source reliability proxies from the reference implementation. Unverified
+  # sources default to 0.50 to prevent prestige bias (paper §VI.C).
+  source_reliability:
+    formal_institution: 0.80
+    api_feed: 0.75
+    satellite: 0.85
+    informal_operator: 0.60
+    community_source: 0.55
+    manual_entry: 0.50
+  default_source_reliability: 0.50
+
+  ecology:
+    component_weights:
+      environmental_impact: 0.40
+      social_impact: 0.35
+      resource_stress: 0.25
+    variable_weights:
+      environmental_impact:
+        carbon_emission_delta: 0.30
+        land_use_change_risk: 0.25
+        water_contamination_risk: 0.20
+        biodiversity_disruption_index: 0.15
+        waste_generation_level: 0.10
+      social_impact:
+        community_displacement_risk: 0.25
+        health_risk_to_population: 0.30
+        equity_impact_score: 0.20
+        cultural_heritage_risk: 0.10
+        livelihood_disruption_index: 0.15
+      resource_stress:
+        water_extraction_rate: 0.25
+        energy_demand_stress: 0.20
+        soil_degradation_index: 0.20
+        infrastructure_load_factor: 0.20
+        raw_material_depletion_risk: 0.15
+
+  inclusion:
+    weights:
+      informal_economy_inclusion: 0.25
+      rural_and_agricultural_inclusion: 0.20
+      gender_equity: 0.20
+      youth_inclusion: 0.20
+      disability_and_vulnerability: 0.15
+    pass_threshold: 0.60
+    flag_below: 0.40
+    # Not specified in the manifests ("on_critical_exclusion: escalate_to_sector_lead").
+    # Provisional value pending author decision.
+    critical_below: 0.30
+
+  hae:
+    weights:
+      productive_capacity_impact: 0.35
+      intra_african_value_creation: 0.20
+      informal_actor_inclusion: 0.20
+      worker_dignity_preserved: 0.15
+      dependency_reduction: 0.10
+    aligned_from: 0.75
+    neutral_from: 0.50
+    misaligned_from: 0.25
+
+  local_fit:
+    pass_threshold: 0.80
+    hard_fail_dimensions: [institutional_alignment, regulatory_grounding]
+
+# Defaults every sector pack is deep-merged over.
+sector_defaults:
+  jurisdiction: Ghana
+  priority_24hae: HIGH
+  domain_modifier: 1.00
+  domain_sensitivity: 1.00
+  # Domain stability (input D) is not specified per sector in any manifest.
+  # 0.65 matches the reference implementation; pending calibration (paper limitation #1).
+  domain_stability: 0.65
+  confidence_weights:
+    evidence_strength: 0.28
+    signal_freshness: 0.18
+    source_reliability: 0.16
+    cross_signal_consistency: 0.18
+    domain_stability_modifier: 0.10
+    contradiction_penalty: 0.10
+  validation_thresholds:
+    trusted: 0.85
+    provisional: 0.60
+    conflicted: 0.30
+    # S8: a would-be trusted/provisional result whose mean freshness is below
+    # this floor becomes "decayed". Provisional value.
+    decay_freshness_floor: 0.25
+  default_tolerance: 0.15
+  eis_warning_threshold: 0.50
+  eis_critical_threshold: 0.75
+  languages:
+    primary: English
+    secondary: []
+  infrastructure_profile: intermittent_connectivity
+  escalation_routing:
+    critical: { role: sector_lead, sla_minutes: 15 }
+    high:     { role: sector_lead, sla_minutes: 30 }
+    medium:   { role: sector_lead, sla_minutes: 60 }
+    low:      { role: analyst,     sla_minutes: 240 }

@@ -1,0 +1,38 @@
+# AFRICA-OS Ω roles and permissions (least privilege).
+# Source: AFRICA_OS_OMEGA_master_manifest_v1_0 › roles_permissions.
+#
+# Kept apart from manifest.yaml on purpose: permissions are not decision
+# configuration, so changing them must not change config_hash or break replay.
+# Roles come from the verified token or API key — never from a request header.
+
+roles:
+  citizen_observer:
+    description: "Public-facing view of non-sensitive sector outputs."
+    permissions: [view_public_dashboards, view_public_sector_summaries]
+  entrepreneur:
+    description: "MSMEs, startups, cooperatives, and individual business operators."
+    permissions: [submit_market_signals, query_sector_intelligence, access_entrepreneur_pack, view_trade_routes]
+  university_researcher:
+    description: "Academic and research institution actors."
+    permissions: [query_research_datasets, run_sector_analysis, access_research_pack, submit_research_signals]
+  operator:
+    description: "Field-level public or private sector staff submitting operational signals."
+    permissions: [submit_signals, view_assigned_outputs, trigger_allowed_prompts]
+  analyst:
+    description: "Institutional analysts generating reports and sector intelligence."
+    permissions: [run_analysis, compare_options, inspect_trails, generate_reports]
+  sector_lead:
+    description: "Sector-level decision authority — ministry director, enterprise head, port manager."
+    permissions: [approve_sector_actions, review_escalations, inspect_sector_audits, adjust_domain_inputs]
+  regulator:
+    description: "National regulatory authority with compliance and audit powers."
+    permissions: [audit_mode, compliance_checks, override_reviews, inspect_cross_sector_trails]
+  administrator:
+    description: "System configuration and role management authority."
+    permissions: [config_management, role_assignment, adapter_management, audit_review]
+  developer:
+    description: "Technical integration and runtime configuration authority."
+    permissions: [api_integration, runtime_configuration, model_binding, schema_mapping, sector_pack_management]
+  sovereign_admin:
+    description: "National or AU-level sovereign governance authority."
+    permissions: [policy_threshold_control, high_consequence_override, strategic_mode_control, weight_recalibration, cross_border_coordination]

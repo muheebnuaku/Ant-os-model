@@ -1,0 +1,409 @@
+# AFRICA-OS Ω core-8 sector packs (Ghana base implementation).
+# Source: AFRICA_OS_OMEGA_sector_packs_core8_v1_0 + reference sector_packs.py.
+#
+# S7: half_life_hours is the source of truth; λ = ln2 / t½ is derived.
+# S2: domain_sensitivity carries the manifest's domain modifier (it scales
+#     contradiction severity rather than inflating confidence).
+# S5: each signal type declares the numeric payload field compared for
+#     contradictions; tolerance is a relative difference.
+#     ⚠ compare_field names are PROVISIONAL — confirm against the real
+#     DHIMS2 / GIFMIS / SCADA / AIS field mappings during adapter work.
+#
+# escalation_rules: the source's free-text triggers, translated into the rule
+#     language in antos_core/engines/triggers.py. Rates are fractions (30% = 0.30).
+#     Field names are PROVISIONAL like compare_field. Where the source named a
+#     threshold without a value (BoG_minimum, safety_threshold, "threshold"),
+#     the rule compares against a threshold field the source system must send.
+# model_route: "sovereign" packs only use an on-prem model at step 14, never a
+#     cloud provider (runbook §7). PROVISIONAL choice: health, finance, governance.
+
+packs:
+  health:
+    sector_name: "Health Sector"
+    priority_24hae: CRITICAL
+    half_life_hours: 1.0
+    domain_modifier: 1.10
+    domain_sensitivity: 1.10
+    confidence_weights:
+      evidence_strength: 0.30
+      signal_freshness: 0.22
+      source_reliability: 0.14
+      cross_signal_consistency: 0.18
+      domain_stability_modifier: 0.08
+      contradiction_penalty: 0.08
+    validation_thresholds: { trusted: 0.88 }
+    default_tolerance: 0.10
+    signal_types:
+      bed_capacity_signal:     { compare_field: occupancy_rate, tolerance: 0.08 }   # S4
+      triage_status_signal:    { compare_field: wait_minutes,   tolerance: 0.07 }
+      drug_stock_level:        { compare_field: stock_days,     tolerance: 0.12 }
+      disease_outbreak_signal: { compare_field: case_count,     tolerance: 0.05 }
+      maternal_mortality_rate: { compare_field: rate,           tolerance: 0.10 }
+    eis_critical_threshold: 0.70
+    ecology_active_metrics: [health_risk_to_population, waste_generation_level, water_contamination_risk]
+    jurisdiction_laws:
+      - "Public Health Act 2012 (Act 851) — Ghana"
+      - "Health Facilities Regulatory Act — Ghana"
+      - "National Health Insurance Act 2003 (Act 650) — Ghana"
+    languages: { primary: English, secondary: [Twi, Hausa, Ewe, Dagbani, Ga] }
+    escalation_routing:
+      critical: { role: sovereign_admin, sla_minutes: 15 }
+      high:     { role: sector_lead,     sla_minutes: 30 }
+      medium:   { role: sector_lead,     sla_minutes: 30 }
+    model_route: sovereign
+    escalation_rules:
+      - id: outbreak_with_low_bed_capacity
+        when: "bed_capacity_signal.occupancy_rate > 90% AND disease_outbreak_signal.status = confirmed"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 15
+        description: "Bed capacity below 10% during a confirmed outbreak."
+      - id: essential_medicine_below_safety_stock
+        when: "drug_stock_level.essential = true AND drug_stock_level.stock_days < drug_stock_level.safety_stock_days"
+        priority: high
+        role: sector_lead
+        sla_minutes: 30
+        description: "Essential medicine stock is below its safety threshold."
+      - id: severe_health_contradiction
+        when: "contradiction_severity >= severe"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 15
+        description: "Severe contradiction between health signals."
+      - id: maternal_death_reported
+        when: "community_health_signal.maternal_death = reported"
+        priority: high
+        role: sector_lead
+        sla_minutes: 20
+        description: "Community health signal reports a maternal death."
+
+
+  agriculture:
+    sector_name: "Agriculture and Food Systems Sector"
+    priority_24hae: CRITICAL
+    half_life_hours: 20.0
+    domain_modifier: 0.95
+    domain_sensitivity: 0.95
+    confidence_weights:
+      evidence_strength: 0.26
+      signal_freshness: 0.16
+      source_reliability: 0.16
+      cross_signal_consistency: 0.20
+      domain_stability_modifier: 0.12
+      contradiction_penalty: 0.10
+    validation_thresholds: { trusted: 0.82 }
+    default_tolerance: 0.22
+    signal_types:
+      farmgate_price_signal: { compare_field: price_ghs,       tolerance: 0.25 }
+      crop_yield_forecast:   { compare_field: yield_t_per_ha,  tolerance: 0.30 }
+      input_availability:    { compare_field: available_units, tolerance: 0.20 }
+      weather_signal:        { compare_field: rainfall_mm,     tolerance: 0.15 }
+      soil_moisture:         { compare_field: moisture_pct,    tolerance: 0.20 }
+    eis_warning_threshold: 0.45
+    eis_critical_threshold: 0.70
+    ecology_active_metrics: [soil_degradation_index, water_extraction_rate, biodiversity_disruption_index, land_use_change_risk]
+    jurisdiction_laws:
+      - "Agriculture Mechanization Act — Ghana"
+      - "Plant and Fertilizer Act 2010 — Ghana"
+    escalation_rules:
+      - id: food_price_inflation
+        when: "farmgate_price_signal.mom_change > 30%"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 30
+        description: "Food price inflation above 30% month on month."
+      - id: inputs_short_before_planting
+        when: "input_availability.availability_rate < 40% AND input_availability.season = pre_planting"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "Input availability below 40% before planting season."
+      - id: post_harvest_loss
+        when: "post_harvest_loss_signal.loss_rate > 35%"
+        priority: high
+        role: sector_lead
+        sla_minutes: 120
+        description: "Post-harvest loss above 35% in a region."
+      - id: yield_collapse
+        when: "crop_yield_forecast.vs_five_year_average < 50%"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 60
+        description: "Yield forecast below half of the five-year average."
+
+
+  finance:
+    sector_name: "Finance, Banking and Capital Markets Sector"
+    priority_24hae: CRITICAL
+    half_life_hours: 2.0
+    domain_modifier: 1.20
+    domain_sensitivity: 1.20
+    confidence_weights:
+      evidence_strength: 0.30
+      signal_freshness: 0.20
+      source_reliability: 0.16
+      cross_signal_consistency: 0.18
+      domain_stability_modifier: 0.08
+      contradiction_penalty: 0.08
+    validation_thresholds: { trusted: 0.88, conflicted: 0.35 }
+    default_tolerance: 0.08
+    signal_types:
+      liquidity_signal:         { compare_field: interbank_rate,   tolerance: 0.06 }
+      exchange_rate_signal:     { compare_field: rate,             tolerance: 0.05 }
+      mobile_money_transaction: { compare_field: volume_ghs,       tolerance: 0.08 }
+      credit_risk_signal:       { compare_field: npl_ratio,        tolerance: 0.10 }
+      capital_adequacy_signal:  { compare_field: car_ratio,        tolerance: 0.08 }
+    ecology_active_metrics: [equity_impact_score, community_displacement_risk]
+    jurisdiction_laws:
+      - "Banks and Specialised Deposit-Taking Institutions Act 2016 (Act 930) — Ghana"
+      - "Payment Systems and Services Act 2019 (Act 987) — Ghana"
+    infrastructure_profile: full_connectivity
+    model_route: sovereign
+    escalation_rules:
+      - id: liquidity_and_capital_breach
+        when: "liquidity_signal.coverage_ratio < liquidity_signal.critical_threshold AND capital_adequacy_signal.car_ratio < capital_adequacy_signal.bog_minimum"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 10
+        description: "Liquidity below critical threshold and capital adequacy below the BoG minimum."
+      - id: fx_shock
+        when: "exchange_rate_signal.depreciation_24h > 5%"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 15
+        description: "Currency depreciation above 5% in 24 hours."
+      - id: mobile_money_float_low
+        when: "mobile_money_transaction.float_hours < 48"
+        priority: high
+        role: sector_lead
+        sla_minutes: 20
+        description: "Mobile money float below a 48-hour operational reserve."
+      - id: sme_default_rate
+        when: "credit_risk_signal.sme_default_rate > credit_risk_signal.alert_threshold"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "SME default rate above the sector alert threshold."
+
+
+  energy:
+    sector_name: "Energy and Power Sector"
+    priority_24hae: CRITICAL
+    half_life_hours: 3.0
+    domain_modifier: 1.15
+    domain_sensitivity: 1.15
+    confidence_weights:
+      evidence_strength: 0.28
+      signal_freshness: 0.22
+      source_reliability: 0.16
+      cross_signal_consistency: 0.18
+      domain_stability_modifier: 0.08
+      contradiction_penalty: 0.08
+    validation_thresholds: { trusted: 0.86 }
+    default_tolerance: 0.09
+    signal_types:
+      grid_load_signal:     { compare_field: load_mw,          tolerance: 0.08 }
+      generation_capacity:  { compare_field: capacity_mw,      tolerance: 0.10 }
+      fuel_stock_signal:    { compare_field: stock_days,       tolerance: 0.10 }
+      power_outage_signal:  { compare_field: customers_out,    tolerance: 0.05 }
+      renewable_generation: { compare_field: generation_mw,    tolerance: 0.12 }
+    ecology_active_metrics: [carbon_emission_delta, energy_demand_stress, infrastructure_load_factor, land_use_change_risk]
+    jurisdiction_laws:
+      - "Energy Commission Act 1997 (Act 541) — Ghana"
+      - "Renewable Energy Act 2011 (Act 832) — Ghana"
+    infrastructure_profile: full_connectivity
+    escalation_routing:
+      critical: { role: sovereign_admin, sla_minutes: 15 }
+    escalation_rules:
+      - id: grid_deficit_with_low_fuel
+        when: "grid_load_signal.deficit_rate > 20% AND fuel_stock_signal.stock_days < 3"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 10
+        description: "Grid deficit above 20% with under 72 hours of fuel."
+      - id: hospital_outage
+        when: "power_outage_signal.duration_hours > 6 AND power_outage_signal.hospitals_affected = true"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 15
+        description: "Outage longer than 6 hours affecting hospitals."
+      - id: capacity_below_peak
+        when: "generation_capacity.capacity_mw < generation_capacity.peak_demand_forecast_mw"
+        priority: high
+        role: sector_lead
+        sla_minutes: 30
+        description: "Generation capacity below forecast peak demand."
+      - id: fuel_below_week
+        when: "fuel_stock_signal.stock_days < 7"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "Fuel stock below a 7-day reserve."
+
+
+  transport:
+    sector_name: "Transport and Logistics Sector"
+    half_life_hours: 5.0
+    validation_thresholds: { trusted: 0.82 }
+    default_tolerance: 0.20
+    signal_types:
+      road_condition_signal: { compare_field: condition_index,  tolerance: 0.20 }
+      corridor_status:       { compare_field: est_transit_days, tolerance: 0.18 }
+      fleet_availability:    { compare_field: available_units,  tolerance: 0.20 }
+      border_crossing:       { compare_field: wait_hours,       tolerance: 0.15 }
+      logistics_cost:        { compare_field: cost_ghs,         tolerance: 0.25 }
+    ecology_active_metrics: [carbon_emission_delta, infrastructure_load_factor, health_risk_to_population]
+    jurisdiction_laws:
+      - "Roads Act 1997 (Act 536) — Ghana"
+      - "Road Traffic Act 2004 (Act 683) — Ghana"
+    escalation_rules:
+      - id: essential_corridor_blocked
+        when: "corridor_status.status = blocked AND corridor_status.essential_cargo = true"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 20
+        description: "Corridor blocked with food or medicine cargo."
+      - id: border_wait
+        when: "border_crossing.wait_hours > 48"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "Border crossing wait above 48 hours."
+      - id: national_fuel_reserve
+        when: "fuel_availability_signal.reserve_hours < 72"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 30
+        description: "Fuel availability below the 72-hour national reserve."
+      - id: road_fatalities
+        when: "road_accident_signal.fatality_count > road_accident_signal.alert_threshold"
+        priority: high
+        role: sector_lead
+        sla_minutes: 30
+        description: "Road accident fatalities above threshold."
+
+
+  education:
+    sector_name: "Education, Research and Human Capital Sector"
+    # Same half-life as governance in the source; no separate rationale given (S7).
+    half_life_hours: 35.0
+    validation_thresholds: { trusted: 0.80 }
+    default_tolerance: 0.22
+    signal_types:
+      enrollment_signal:    { compare_field: enrollment_rate, tolerance: 0.15 }
+      teacher_availability: { compare_field: teachers,        tolerance: 0.20 }
+      graduate_employment:  { compare_field: employment_rate, tolerance: 0.25 }
+      research_output:      { compare_field: publications,    tolerance: 0.30 }
+    ecology_active_metrics: [equity_impact_score, community_displacement_risk]
+    jurisdiction_laws:
+      - "Education Act 1961 (Act 87) — Ghana"
+      - "TVET Policy — Ghana"
+    escalation_rules:
+      - id: primary_teacher_vacancies
+        when: "teacher_availability.primary_vacancy_rate > 30%"
+        priority: high
+        role: sector_lead
+        sla_minutes: 120
+        description: "Primary school teacher vacancy rate above 30%."
+      - id: graduate_employment_low
+        when: "graduate_employment.employment_rate_12m < 40%"
+        priority: high
+        role: sector_lead
+        sla_minutes: 240
+        description: "Graduate employment within 12 months below 40%."
+      - id: dropout_rate
+        when: "student_welfare_signal.dropout_rate > student_welfare_signal.alert_threshold"
+        priority: high
+        role: sector_lead
+        sla_minutes: 120
+        description: "Dropout rate above the sector threshold."
+
+
+  governance:
+    sector_name: "Governance, Public Administration and Rule of Law"
+    half_life_hours: 35.0
+    domain_modifier: 1.05
+    domain_sensitivity: 1.05
+    default_tolerance: 0.10
+    signal_types:
+      policy_signal:    { compare_field: value,            tolerance: 0.10 }
+      budget_execution: { compare_field: execution_rate,   tolerance: 0.12 }
+      service_delivery: { compare_field: delivery_rate,    tolerance: 0.15 }
+      corruption_risk:  { compare_field: risk_index,       tolerance: 0.08 }
+      electoral_signal: { compare_field: turnout_rate,     tolerance: 0.05 }
+    ecology_active_metrics: [community_displacement_risk, equity_impact_score, cultural_heritage_risk]
+    jurisdiction_laws:
+      - "Constitution of Ghana 1992"
+      - "Local Governance Act 2016 (Act 936) — Ghana"
+      - "Public Financial Management Act 2016 (Act 921) — Ghana"
+    infrastructure_profile: full_connectivity
+    model_route: sovereign
+    escalation_rules:
+      - id: procurement_corruption_risk
+        when: "corruption_risk.severity >= high AND corruption_risk.procurement_value > corruption_risk.value_threshold"
+        priority: high
+        role: regulator
+        sla_minutes: 60
+        description: "High corruption risk on a procurement above threshold."
+      - id: budget_release_q3
+        when: "budget_execution.release_rate < 50% AND budget_execution.quarter = Q3"
+        priority: high
+        role: sovereign_admin
+        sla_minutes: 120
+        description: "Budget release below 50% at Q3."
+      - id: electoral_contradiction
+        when: "contradiction.electoral_signal >= moderate"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 15
+        description: "Electoral signals contradict each other."
+      - id: service_delivery_failure
+        when: "service_delivery.failure_rate > 40%"
+        priority: high
+        role: sector_lead
+        sla_minutes: 120
+        description: "Service delivery failure rate above 40%."
+
+
+  ports:
+    sector_name: "Ports, Maritime and Trade Facilitation Sector"
+    half_life_hours: 7.0
+    default_tolerance: 0.10
+    signal_types:
+      vessel_arrival_eta: { compare_field: eta_hours,        tolerance: 0.12 }
+      berth_occupancy:    { compare_field: occupancy_rate,   tolerance: 0.08 }
+      container_manifest: { compare_field: container_count, tolerance: 0.05 }
+      customs_clearance:  { compare_field: clearance_hours, tolerance: 0.10 }
+      demurrage_signal:   { compare_field: demurrage_days,  tolerance: 0.15 }
+    eis_warning_threshold: 0.55
+    eis_critical_threshold: 0.78
+    ecology_active_metrics: [carbon_emission_delta, water_contamination_risk, infrastructure_load_factor, waste_generation_level]
+    jurisdiction_laws:
+      - "Ghana Ports and Harbours Authority Act 1986 (PNDC Law 160) — Ghana"
+      - "Customs Act 2015 (Act 891) — Ghana"
+    infrastructure_profile: full_connectivity
+    escalation_rules:
+      - id: berth_full_with_queue
+        when: "berth_occupancy.occupancy_rate >= 100% AND berth_occupancy.vessel_queue > 10"
+        priority: high
+        role: sector_lead
+        sla_minutes: 30
+        description: "Berths full with more than 10 vessels queued."
+      - id: customs_clearance_slow
+        when: "customs_clearance.clearance_hours > 120"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "Average customs clearance above 5 days."
+      - id: landlocked_corridor_disruption
+        when: "corridor_cargo_signal.disruption = confirmed AND corridor_cargo_signal.landlocked_destination = true"
+        priority: critical
+        role: sovereign_admin
+        sla_minutes: 30
+        description: "Confirmed corridor disruption for a landlocked destination."
+      - id: crane_availability
+        when: "port_infrastructure_signal.crane_availability < 60%"
+        priority: high
+        role: sector_lead
+        sla_minutes: 60
+        description: "Crane availability below 60%."

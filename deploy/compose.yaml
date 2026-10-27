@@ -1,0 +1,70 @@
+# Pilot stack:  docker compose -f deploy/compose.yaml up --build
+# Then create the first key:
+#   docker compose -f deploy/compose.yaml run --rm api \
+#     python -m antos_api.cli create-api-key --name ops --roles administrator sovereign_admin --nation GH
+#
+# Secrets come from deploy/.env (see .env.example), never from this file.
+# Keycloak is expected to run separately; set ANTOS_OIDC_* to enable bearer tokens.
+
+x-app: &app
+  build: { context: .., dockerfile: deploy/Dockerfile }
+  env_file: [.env]
+  environment:
+    ANTOS_DATABASE_URL: postgresql+asyncpg://antos:${POSTGRES_PASSWORD}@db:5432/antos
+    ANTOS_REDIS_URL: redis://redis:6379
+  depends_on:
+    db: { condition: service_healthy }
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: antos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: antos
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "antos"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  migrate:
+    <<: *app
+    command: ["alembic", "-c", "services/api/alembic.ini", "upgrade", "head"]
+    restart: "no"
+
+  api:
+    <<: *app
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  worker:
+    <<: *app
+    command: ["arq", "antos_api.worker.WorkerSettings"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  # Optional identity provider:  docker compose -f deploy/compose.yaml --profile identity up
+  # Dev mode only (HTTP, embedded H2 store). In production run Keycloak with its
+  # own Postgres database and TLS, or federate to the national SSO.
+  # Then set in deploy/.env:
+  #   ANTOS_OIDC_ISSUER=http://localhost:8080/realms/antos
+  #   ANTOS_OIDC_AUDIENCE=antos-api
+  #   ANTOS_OIDC_JWKS_URL=http://keycloak:8080/realms/antos/protocol/openid-connect/certs
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    profiles: [identity]
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in deploy/.env}
+    volumes: [./keycloak/antos-realm.json:/opt/keycloak/data/import/antos-realm.json:ro]
+    ports: ["8080:8080"]
+
+volumes:
+  pgdata:

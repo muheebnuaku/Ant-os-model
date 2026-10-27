@@ -1,0 +1,136 @@
+alembic==1.20.1
+    # via antos-api
+annotated-doc==0.0.5
+    # via fastapi
+annotated-types==0.8.0
+    # via pydantic
+anthropic==2.3.0
+    # via antos-api
+anyio==4.15.1
+    # via
+    #   anthropic
+    #   httpx
+    #   httpx2
+    #   starlette
+    #   watchfiles
+arq==0.28.0
+    # via antos-api
+asyncpg==0.32.0
+    # via antos-api
+certifi==2026.10.23
+    # via
+    #   httpcore
+    #   httpx
+cffi==2.1.1 ; platform_python_implementation != 'PyPy'
+    # via cryptography
+click==8.5.0
+    # via
+    #   arq
+    #   uvicorn
+cryptography==50.0.2
+    # via pyjwt
+docstring-parser==0.18.0
+    # via anthropic
+fastapi==0.162.0
+    # via antos-api
+greenlet==3.5.6
+    # via sqlalchemy
+h11==0.16.0
+    # via
+    #   httpcore
+    #   httpcore2
+    #   uvicorn
+hiredis==3.5.0
+    # via redis
+httpcore==1.0.9
+    # via httpx
+httpcore2==2.16.0 ; sys_platform != 'emscripten'
+    # via httpx2
+httptools==0.9.0
+    # via uvicorn
+httpx==0.28.1
+    # via antos-api
+httpx2==2.16.0
+    # via anthropic
+httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
+    # via httpx2
+idna==3.20
+    # via
+    #   anyio
+    #   httpx
+    #   httpx2
+jiter==0.18.0
+    # via anthropic
+mako==1.4.3
+    # via alembic
+markupsafe==3.0.4
+    # via mako
+opentelemetry-api==1.45.1
+    # via
+    #   anthropic
+    #   fastapi
+pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+    # via cffi
+pydantic==2.14.1
+    # via
+    #   anthropic
+    #   antos-core
+    #   fastapi
+    #   pydantic-settings
+pydantic-core==2.50.1
+    # via pydantic
+pydantic-settings==2.16.1
+    # via antos-api
+pyjwt==2.15.1
+    # via
+    #   antos-api
+    #   redis
+python-dotenv==1.2.4
+    # via
+    #   pydantic-settings
+    #   uvicorn
+pyyaml==6.0.3
+    # via
+    #   antos-core
+    #   uvicorn
+redis==5.3.1
+    # via arq
+sniffio==1.3.1
+    # via anthropic
+sqlalchemy==2.1.6
+    # via
+    #   alembic
+    #   antos-api
+starlette==1.10.0
+    # via fastapi
+truststore==0.10.5 ; sys_platform != 'emscripten'
+    # via
+    #   httpcore2
+    #   httpx2
+typing-extensions==4.16.0
+    # via
+    #   alembic
+    #   anthropic
+    #   anyio
+    #   fastapi
+    #   httpx2
+    #   opentelemetry-api
+    #   pydantic
+    #   pydantic-core
+    #   pydantic-settings
+    #   sqlalchemy
+    #   starlette
+    #   typing-inspection
+typing-inspection==0.4.4
+    # via
+    #   fastapi
+    #   pydantic
+    #   pydantic-settings
+uvicorn==0.54.0
+    # via antos-api
+uvloop==0.23.0 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32'
+    # via uvicorn
+watchfiles==1.3.0
+    # via uvicorn
+websockets==17.3
+    # via uvicorn

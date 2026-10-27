@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFRICA-OS Ω — Africa Intelligence System OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS — Ghana-rooted identity
+═══════════════════════════════════════════ */
+:root {
+  --gold:        #B8860B;
+  --gold-lt:     #D4A017;
+  --gold-dim:    rgba(184,134,11,0.15);
+  --gold-glow:   rgba(184,134,11,0.08);
+  --earth:       #1A1209;
+  --forest:      #0D2318;
+  --clay:        #7A3B2E;
+  --sky:         #0B1E35;
+  --bg:          #0E0B06;
+  --surface:     #141009;
+  --card:        #1C1610;
+  --card-hi:     #231D12;
+  --border:      rgba(184,134,11,0.14);
+  --border-hi:   rgba(184,134,11,0.28);
+  --text:        #E8DCC8;
+  --text-dim:    #8A7A60;
+  --text-mute:   #3A3020;
+  --green:       #2ABF7A;
+  --green-dim:   rgba(42,191,122,0.12);
+  --amber:       #E08C20;
+  --amber-dim:   rgba(224,140,32,0.12);
+  --red:         #E04040;
+  --red-dim:     rgba(224,64,64,0.12);
+  --blue:        #4090D8;
+  --blue-dim:    rgba(64,144,216,0.12);
+  --purple:      #9060D0;
+  --r:           10px;
+  --r-lg:        16px;
+  --mono:        'Geist Mono', monospace;
+  --serif:       'Instrument Serif', serif;
+  --sans:        'Geist', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--sans); font-size: 14px; line-height: 1.55;
+  min-height: 100vh; overflow: hidden;
+}
+
+/* ── ADINKRA SANKOFA BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(184,134,11,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 90%, rgba(13,35,24,0.40) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Ccircle cx='40' cy='40' r='28' stroke='%23B8860B' stroke-opacity='0.035' stroke-width='0.8'/%3E%3Ccircle cx='40' cy='40' r='16' stroke='%23B8860B' stroke-opacity='0.025' stroke-width='0.6'/%3E%3Cpath d='M40 12 L68 40 L40 68 L12 40 Z' stroke='%23B8860B' stroke-opacity='0.02' stroke-width='0.5' fill='none'/%3E%3C/g%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════ */
+.shell {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 52px 1fr;
+  height: 100vh;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px 0 0;
+  background: rgba(14,11,6,0.96); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.tb-brand {
+  display: flex; align-items: center; gap: 0;
+  height: 52px; padding: 0 20px;
+  border-right: 1px solid var(--border);
+}
+.tb-omega {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, rgba(184,134,11,0.25), rgba(184,134,11,0.08));
+  border: 1px solid rgba(184,134,11,0.35);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 18px; color: var(--gold-lt);
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.tb-name { font-size: 12px; font-weight: 500; color: var(--gold-lt); letter-spacing: 0.07em; }
+.tb-sub  { font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; margin-top: 1px; }
+.tb-center { display: flex; align-items: center; gap: 16px; flex: 1; justify-content: center; }
+.tb-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); font-family: var(--mono); letter-spacing: 0.05em; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: liveblink 2s ease-in-out infinite; }
+@keyframes liveblink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.tb-clock { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.tb-right { display: flex; align-items: center; gap: 8px; }
+.tb-pill {
+  padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.pill-gold   { background: var(--gold-dim); color: var(--gold-lt); border: 1px solid rgba(184,134,11,0.25); }
+.pill-blue   { background: var(--blue-dim); color: var(--blue);    border: 1px solid rgba(64,144,216,0.20); }
+.pill-green  { background: var(--green-dim); color: var(--green);  border: 1px solid rgba(42,191,122,0.20); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;
+}
+.sidebar::-webkit-scrollbar { display: none; }
+.nav-section { padding: 16px 12px 8px; }
+.nav-section-label { font-size: 9px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-mute); padding: 0 8px; margin-bottom: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: 7px; cursor: pointer;
+  font-size: 12px; color: var(--text-dim); font-weight: 400;
+  transition: all 0.15s ease; margin-bottom: 1px;
+  white-space: nowrap;
+}
+.nav-item:hover { background: var(--gold-glow); color: var(--text); }
+.nav-item.active { background: var(--gold-dim); color: var(--gold-lt); font-weight: 500; }
+.nav-icon { font-size: 14px; flex-shrink: 0; width: 16px; text-align: center; }
+.nav-badge {
+  margin-left: auto; padding: 1px 6px; border-radius: 100px;
+  font-size: 9px; font-weight: 600; font-family: var(--mono);
+  background: var(--red-dim); color: var(--red);
+}
+.nav-badge.amber { background: var(--amber-dim); color: var(--amber); }
+.sidebar-footer {
+  margin-top: auto; padding: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--text-mute); line-height: 1.5;
+}
+.sidebar-footer strong { display: block; color: var(--text-dim); margin-bottom: 2px; font-size: 10px; }
+
+/* ── MAIN AREA ── */
+.main {
+  overflow-y: auto; overflow-x: hidden;
+  background: var(--bg);
+}
+.main::-webkit-scrollbar { width: 3px; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   SHARED COMPONENTS
+═══════════════════════════════════════════ */
+.page-header { padding: 24px 28px 0; }
+.page-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.page-title { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--text); line-height: 1.15; }
+.page-title em { font-style: italic; color: var(--gold-lt); }
+.page-sub { font-size: 12px; color: var(--text-dim); margin-top: 5px; }
+.page-content { padding: 20px 28px 40px; }
+
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 20px;
+}
+.card-sm { padding: 12px 16px; }
+
+.section-label {
+  font-size: 9px; font-weight: 500; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::before { content: ''; flex-shrink: 0; width: 14px; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+
+/* Score bar */
+.score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.score-label { font-size: 11px; color: var(--text-dim); width: 120px; flex-shrink: 0; }
+.score-track { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; }
+.score-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.score-val { font-family: var(--mono); font-size: 11px; width: 36px; text-align: right; flex-shrink: 0; }
+.fill-green  { background: var(--green); }
+.fill-amber  { background: var(--amber); }
+.fill-red    { background: var(--red); }
+.fill-gold   { background: var(--gold-lt); }
+.fill-blue   { background: var(--blue); }
+
+/* Metric card */
+.metric-grid { display: grid; gap: 10px; }
+.metric-card {
+  background: rgba(255,255,255,0.025); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px;
+}
+.metric-val { font-family: var(--mono); font-size: 22px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+.metric-lbl { font-size: 10px; color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase; }
+.metric-delta { font-size: 10px; margin-top: 3px; }
+.delta-up   { color: var(--green); }
+.delta-down { color: var(--red); }
+.delta-flat { color: var(--text-dim); }
+
+/* Status badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 100px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase;
+}
+.badge-trusted     { background: var(--green-dim); color: var(--green); border: 1px solid rgba(42,191,122,0.22); }
+.badge-provisional { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(224,140,32,0.22); }
+.badge-conflicted  { background: rgba(144,96,208,0.12); color: var(--purple); border: 1px solid rgba(144,96,208,0.20); }
+.badge-blocked     { background: var(--red-dim);  color: var(--red);   border: 1px solid rgba(224,64,64,0.22); }
+.badge-critical    { background: var(--red-dim);  color: var(--red);   border: 1px solid rgba(224,64,64,0.22); }
+.badge-high        { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(224,140,32,0.22); }
+.badge-healthy     { background: var(--green-dim); color: var(--green); border: 1px solid rgba(42,191,122,0.22); }
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ═══════════════════════════════════════════
+   VIEW 1: SITUATION ROOM
+═══════════════════════════════════════════ */
+#view-situation .kpi-row {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 16px;
+  position: relative; overflow: hidden;
+}
+.kpi-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent, var(--gold)), transparent);
+}
+.kpi-label { font-size: 9px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
+.kpi-value { font-family: var(--mono); font-size: 24px; font-weight: 500; line-height: 1; }
+.kpi-sub   { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+.sector-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;
+}
+.sector-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sector-card:hover { border-color: var(--border-hi); background: var(--card-hi); }
+.sector-card.status-red    { border-color: rgba(224,64,64,0.30); }
+.sector-card.status-amber  { border-color: rgba(224,140,32,0.28); }
+.sector-card.status-green  { border-color: rgba(42,191,122,0.18); }
+.sc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sc-icon { font-size: 17px; }
+.sc-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+.sc-bar-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-bottom: 8px; }
+.sc-bar-fill  { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.sc-metrics { display: flex; gap: 8px; margin-bottom: 8px; }
+.sc-metric { flex: 1; text-align: center; }
+.sc-metric-val { font-family: var(--mono); font-size: 14px; font-weight: 500; line-height: 1; }
+.sc-metric-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.sc-alert {
+  font-size: 10px; color: var(--text-dim); padding: 3px 8px;
+  background: rgba(255,255,255,0.025); border-radius: 4px;
+  border-left: 2px solid transparent; margin-bottom: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sc-alert.red   { border-left-color: var(--red);   color: rgba(224,64,64,0.80); }
+.sc-alert.amber { border-left-color: var(--amber); color: rgba(224,140,32,0.80); }
+.sc-alert.green { border-left-color: var(--green); color: rgba(42,191,122,0.70); }
+
+.bottom-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+.panel-title { font-size: 10px; font-weight: 500; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); }
+
+.esc-list { padding: 8px; }
+.esc-item {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 8px 8px; border-radius: 7px; margin-bottom: 4px;
+  background: rgba(255,255,255,0.02); cursor: pointer;
+  transition: background 0.15s;
+}
+.esc-item:hover { background: rgba(255,255,255,0.04); }
+.esc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.esc-body { flex: 1; min-width: 0; }
+.esc-obj  { font-size: 11px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.esc-meta { display: flex; gap: 8px; margin-top: 2px; font-size: 10px; color: var(--text-dim); }
+.esc-btn  { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--blue-dim); color: var(--blue); border: none; cursor: pointer; font-family: var(--sans); flex-shrink: 0; align-self: center; }
+
+.signal-list { padding: 8px; max-height: 220px; overflow-y: auto; }
+.signal-list::-webkit-scrollbar { display: none; }
+.sig-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 5px; margin-bottom: 2px;
+  font-size: 11px; animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+.sig-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sig-type  { color: var(--blue); font-family: var(--mono); font-size: 10px; flex-shrink: 0; width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sig-src   { color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.sig-fresh { font-family: var(--mono); font-size: 10px; font-weight: 500; flex-shrink: 0; }
+.sig-time  { font-family: var(--mono); font-size: 9px; color: var(--text-mute); flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════
+   VIEW 2: ENTREPRENEUR INTELLIGENCE
+═══════════════════════════════════════════ */
+.sector-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.sector-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border: 1px solid var(--border);
+  border-radius: 100px; cursor: pointer; font-size: 11px; font-weight: 500;
+  color: var(--text-dim); background: var(--card);
+  transition: all 0.15s ease;
+}
+.sector-chip:hover { border-color: var(--gold); color: var(--text); }
+.sector-chip.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-lt); }
+
+.query-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden; margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.query-card:focus-within { border-color: rgba(184,134,11,0.40); }
+.query-ta {
+  width: 100%; background: transparent; border: none; outline: none;
+  padding: 16px 18px; color: var(--text); font-family: var(--sans);
+  font-size: 14px; resize: none; min-height: 88px; line-height: 1.55;
+}
+.query-ta::placeholder { color: var(--text-mute); }
+.query-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+.query-hint { font-size: 10px; color: var(--text-mute); }
+.analyse-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+  color: var(--earth); border: none; border-radius: 7px;
+  font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+  cursor: pointer; transition: all 0.15s ease;
+}
+.analyse-btn:hover { transform: translateY(-1px); }
+.analyse-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.thinking { display: none; align-items: center; gap: 12px; padding: 20px; }
+.thinking.show { display: flex; }
+.think-dots { display: flex; gap: 5px; }
+.think-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: tdbounce 1.2s ease-in-out infinite; }
+.think-dots span:nth-child(2) { animation-delay: 0.2s; }
+.think-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdbounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+.think-text { font-size: 12px; color: var(--text-dim); }
+
+.result-card { display: none; animation: slideUp 0.3s ease; }
+.result-card.show { display: block; }
+@keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+.result-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.result-sector { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.result-action { font-family: var(--serif); font-size: 18px; line-height: 1.3; color: var(--text); margin-bottom: 8px; }
+.result-summary { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
+
+.insight-row {
+  display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px;
+  background: rgba(255,255,255,0.025); border-radius: 8px; margin-bottom: 7px;
+  border-left: 2px solid transparent;
+}
+.insight-row.ubuntu   { border-left-color: var(--gold); }
+.insight-row.hae      { border-left-color: var(--green); }
+.insight-row.warning  { border-left-color: var(--amber); }
+.insight-label { font-size: 9px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; flex-shrink: 0; margin-bottom: 2px; }
+.insight-body  { font-size: 11px; color: var(--text-dim); line-height: 1.55; }
+.insight-body strong { color: var(--text); font-weight: 500; }
+
+.action-item { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+.action-item:last-child { border-bottom: none; }
+.action-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 5px; }
+
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quick-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.quick-card:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+.quick-icon  { font-size: 18px; margin-bottom: 6px; }
+.quick-title { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.quick-desc  { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+
+/* ═══════════════════════════════════════════
+   VIEW 3: UNIVERSITY RESEARCH PORTAL
+═══════════════════════════════════════════ */
+.research-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.research-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px 20px; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.research-card:hover { border-color: var(--border-hi); }
+.rc-icon  { font-size: 20px; margin-bottom: 10px; }
+.rc-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+.rc-desc  { font-size: 11px; color: var(--text-dim); line-height: 1.55; }
+.rc-meta  { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table th { font-size: 9px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.data-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); }
+.data-table td:first-child { color: var(--text); font-weight: 500; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ═══════════════════════════════════════════
+   VIEW 4: CORRIDOR MAP
+═══════════════════════════════════════════ */
+.corridor-layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+.map-container {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 20px; min-height: 500px;
+  position: relative;
+}
+.corridor-cards { display: flex; flex-direction: column; gap: 10px; }
+.corridor-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 16px; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.corridor-card:hover { border-color: var(--border-hi); }
+.corridor-card.selected { border-color: var(--gold); background: var(--gold-glow); }
+.cc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cc-name  { font-size: 12px; font-weight: 500; color: var(--text); }
+.cc-score { font-family: var(--mono); font-size: 16px; font-weight: 500; }
+.cc-nations { font-size: 10px; color: var(--text-dim); margin-bottom: 8px; }
+.cc-bars { display: flex; flex-direction: column; gap: 4px; }
+
+/* ═══════════════════════════════════════════
+   COLOURS
+═══════════════════════════════════════════ */
+.c-gold   { color: var(--gold-lt); }
+.c-green  { color: var(--green); }
+.c-amber  { color: var(--amber); }
+.c-red    { color: var(--red); }
+.c-blue   { color: var(--blue); }
+.c-purple { color: var(--purple); }
+.c-dim    { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── TOP BAR ─────────────────────────────── -->
+  <header class="topbar">
+    <div class="tb-brand">
+      <div class="tb-omega">Ω</div>
+      <div>
+        <div class="tb-name">AFRICA-OS Ω</div>
+        <div class="tb-sub">AFRICA INTELLIGENCE SYSTEM OS</div>
+      </div>
+    </div>
+    <div class="tb-center">
+      <div class="tb-status"><div class="live-dot"></div>LIVE</div>
+      <div class="tb-clock" id="clock">—</div>
+      <div class="tb-status" style="color:var(--text-dim)">8 SECTOR AGENTS ACTIVE</div>
+    </div>
+    <div class="tb-right">
+      <span class="tb-pill pill-gold">🇬🇭 GH ANCHOR</span>
+      <span class="tb-pill pill-blue">AU · 55 STATES</span>
+      <span class="tb-pill pill-green">24HAE ACTIVE</span>
+    </div>
+  </header>
+
+  <!-- ── SIDEBAR ─────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-section-label">Command</div>
+      <div class="nav-item active" onclick="showView('situation')">
+        <span class="nav-icon">⚡</span> Situation Room
+        <span class="nav-badge" id="escBadge">4</span>
+      </div>
+      <div class="nav-item" onclick="showView('signals')">
+        <span class="nav-icon">📡</span> Signal Stream
+        <span class="nav-badge amber" id="sigBadge">—</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Intelligence</div>
+      <div class="nav-item" onclick="showView('entrepreneur')">
+        <span class="nav-icon">💼</span> Entrepreneur Intel
+      </div>
+      <div class="nav-item" onclick="showView('university')">
+        <span class="nav-icon">🎓</span> Research Portal
+      </div>
+      <div class="nav-item" onclick="showView('corridors')">
+        <span class="nav-icon">🗺️</span> Corridor Map
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Sectors</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🏥</span> Health</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🌾</span> Agriculture</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🏦</span> Finance</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">⚡</span> Energy</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🚛</span> Transport</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🎓</span> Education</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">🏛️</span> Governance</div>
+      <div class="nav-item" onclick="showView('situation')"><span class="nav-icon">⚓</span> Ports</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Federation</div>
+      <div class="nav-item" onclick="showView('corridors')"><span class="nav-icon">🌐</span> ECOWAS Zone</div>
+      <div class="nav-item" onclick="showView('corridors')"><span class="nav-icon">📋</span> Treaties</div>
+      <div class="nav-item" onclick="showView('corridors')"><span class="nav-icon">🔄</span> Signal Exchange</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Governance</div>
+      <div class="nav-item"><span class="nav-icon">📋</span> Audit Log</div>
+      <div class="nav-item"><span class="nav-icon">⚙️</span> Sector Packs</div>
+      <div class="nav-item"><span class="nav-icon">🔒</span> Admin</div>
+    </div>
+
+    <div class="sidebar-footer">
+      <strong>AFRICA-OS Ω v1.3</strong>
+      Creator: Dr. David King Boison<br>
+      Ubuntu — I am because we are
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════
+       MAIN VIEWS
+  ══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ── VIEW 1: SITUATION ROOM ── -->
+    <div id="view-situation" class="view active">
+      <div class="page-header">
+        <div class="page-eyebrow">24-Hour Africa Economy Policy</div>
+        <div class="page-title">National <em>Situation Room</em></div>
+        <div class="page-sub">Ghana anchor node · Continental federation active · All 8 sector agents running</div>
+      </div>
+      <div class="page-content">
+
+        <!-- KPI Row -->
+        <div class="kpi-row" style="margin-bottom:20px;">
+          <div class="kpi-card" style="--accent:var(--blue)">
+            <div class="kpi-label">Decisions / 24h</div>
+            <div class="kpi-value c-blue" id="kpiDec">1,082</div>
+            <div class="kpi-sub"><span class="delta-up">+14%</span> vs yesterday</div>
+          </div>
+          <div class="kpi-card" style="--accent:var(--green)">
+            <div class="kpi-label">Avg Confidence</div>
+            <div class="kpi-value c-green" id="kpiConf">79%</div>
+            <div class="kpi-sub"><span class="delta-up">+2pp</span> 24h change</div>
+          </div>
+          <div class="kpi-card" style="--accent:var(--amber)">
+            <div class="kpi-label">Active Escalations</div>
+            <div class="kpi-value c-amber" id="kpiEsc">4</div>
+            <div class="kpi-sub"><span class="c-red">2 critical</span> pending SLA</div>
+          </div>
+          <div class="kpi-card" style="--accent:var(--gold-lt)">
+            <div class="kpi-label">24HAE Alignment</div>
+            <div class="kpi-value c-gold" id="kpiHae">73%</div>
+            <div class="kpi-sub"><span class="delta-flat">stable</span> policy score</div>
+          </div>
+          <div class="kpi-card" style="--accent:var(--purple)">
+            <div class="kpi-label">Contradiction Rate</div>
+            <div class="kpi-value c-purple" id="kpiCont">5</div>
+            <div class="kpi-sub"><span class="delta-down">+2</span> last hour</div>
+          </div>
+        </div>
+
+        <!-- Sector Grid -->
+        <div class="section-label">Sector Intelligence — Core 8</div>
+        <div class="sector-grid" id="sectorGrid"></div>
+
+        <!-- Bottom Panels -->
+        <div class="bottom-panels">
+          <!-- Escalations -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Active Escalations</span>
+              <span class="c-red" style="font-family:var(--mono);font-size:11px;">4 pending</span>
+            </div>
+            <div class="esc-list" id="escList"></div>
+          </div>
+          <!-- Live Signal Stream -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Live Signal Stream</span>
+              <span class="c-green" style="font-family:var(--mono);font-size:11px;" id="sigCount">0 signals</span>
+            </div>
+            <div class="signal-list" id="signalList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 2: SIGNAL STREAM (placeholder) ── -->
+    <div id="view-signals" class="view">
+      <div class="page-header">
+        <div class="page-eyebrow">Signal Fabric</div>
+        <div class="page-title">Live <em>Signal Stream</em></div>
+        <div class="page-sub">All ingested signals across 8 sectors · Freshness decay active · Contradiction engine monitoring</div>
+      </div>
+      <div class="page-content">
+        <div class="card" style="padding:40px;text-align:center;">
+          <div style="font-size:32px;margin-bottom:12px;">📡</div>
+          <div style="font-size:14px;color:var(--text-dim);">Full signal stream view — connects to <code style="font-family:var(--mono);color:var(--gold);">POST /v1/signals/ingest</code></div>
+          <div style="font-size:11px;color:var(--text-mute);margin-top:6px;">Wire to the FastAPI backend to display live ingested signals</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 3: ENTREPRENEUR INTELLIGENCE ── -->
+    <div id="view-entrepreneur" class="view">
+      <div class="page-header">
+        <div class="page-eyebrow">24-Hour Economy — MSME & Cooperative Intelligence</div>
+        <div class="page-title">What does your <em>business need</em> to know?</div>
+        <div class="page-sub">Governed sector intelligence for entrepreneurs, MSMEs, cooperatives, and startups across Africa.</div>
+      </div>
+      <div class="page-content">
+        <div style="max-width:660px;">
+
+          <!-- Sector Chips -->
+          <div class="section-label">Choose sector</div>
+          <div class="sector-chips" id="entSectors">
+            <div class="sector-chip active" data-sector="health"      onclick="entSelectSector(this)">🏥 Health</div>
+            <div class="sector-chip"        data-sector="agriculture" onclick="entSelectSector(this)">🌾 Agriculture</div>
+            <div class="sector-chip"        data-sector="finance"     onclick="entSelectSector(this)">🏦 Finance</div>
+            <div class="sector-chip"        data-sector="energy"      onclick="entSelectSector(this)">⚡ Energy</div>
+            <div class="sector-chip"        data-sector="transport"   onclick="entSelectSector(this)">🚛 Transport</div>
+            <div class="sector-chip"        data-sector="ports"       onclick="entSelectSector(this)">⚓ Ports</div>
+          </div>
+
+          <!-- Query Box -->
+          <div class="query-card">
+            <textarea class="query-ta" id="entQuery" rows="3"
+              placeholder="e.g. What are the main risks for a cold storage business in the Northern Region this planting season?"></textarea>
+            <div class="query-footer">
+              <span class="query-hint">Twi · English · Hausa · French supported</span>
+              <button class="analyse-btn" id="entBtn" onclick="runEntAnalysis()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l14 9-14 9V3z"/></svg>
+                ANALYSE
+              </button>
+            </div>
+          </div>
+
+          <!-- Thinking -->
+          <div class="thinking" id="entThinking">
+            <div class="think-dots"><span></span><span></span><span></span></div>
+            <div class="think-text" id="entThinkText">Ingesting signals…</div>
+          </div>
+
+          <!-- Result -->
+          <div class="card result-card" id="entResult">
+            <div class="result-head">
+              <span class="result-sector" id="entResultSector">HEALTH</span>
+              <span class="badge" id="entResultBadge">TRUSTED</span>
+            </div>
+            <div class="result-action" id="entResultAction">—</div>
+            <div class="result-summary" id="entResultSummary">—</div>
+
+            <!-- Score pills -->
+            <div class="metric-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;" id="entScores"></div>
+
+            <!-- Insights -->
+            <div id="entInsights"></div>
+
+            <div class="divider"></div>
+            <div class="section-label">Recommended steps</div>
+            <div id="entActions"></div>
+
+            <!-- Escalation alert -->
+            <div id="entEscAlert" style="display:none;margin-top:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(224,64,64,0.25);border-radius:8px;font-size:11px;color:var(--red);">
+              ⚠️ This situation requires review by a sector authority before action.
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Quick Actions -->
+          <div class="section-label">Quick intelligence</div>
+          <div class="quick-grid">
+            <div class="quick-card" onclick="entQuick('What are current market prices for maize and tomatoes?','agriculture')">
+              <div class="quick-icon">📊</div>
+              <div class="quick-title">Market prices</div>
+              <div class="quick-desc">Today's farm-gate rates for key crops</div>
+            </div>
+            <div class="quick-card" onclick="entQuick('Is there any risk of power outage affecting my business today?','energy')">
+              <div class="quick-icon">⚡</div>
+              <div class="quick-title">Power outlook</div>
+              <div class="quick-desc">Grid status and outage risk signals</div>
+            </div>
+            <div class="quick-card" onclick="entQuick('What credit options are available for small businesses?','finance')">
+              <div class="quick-icon">💳</div>
+              <div class="quick-title">SME finance access</div>
+              <div class="quick-desc">Credit and mobile money signals</div>
+            </div>
+            <div class="quick-card" onclick="entQuick('What is the road and freight corridor situation to Kumasi?','transport')">
+              <div class="quick-icon">🛣️</div>
+              <div class="quick-title">Corridor status</div>
+              <div class="quick-desc">Route conditions and logistics signals</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 4: UNIVERSITY RESEARCH PORTAL ── -->
+    <div id="view-university" class="view">
+      <div class="page-header">
+        <div class="page-eyebrow">Pan-African Research & Knowledge Intelligence</div>
+        <div class="page-title"><em>University</em> Research Portal</div>
+        <div class="page-sub">Sector intelligence, data packages, and economic signal analysis for academic and research institutions.</div>
+      </div>
+      <div class="page-content">
+
+        <div class="section-label">Research intelligence packages</div>
+        <div class="research-grid">
+          <div class="research-card">
+            <div class="rc-icon">🌾</div>
+            <div class="rc-title">Agricultural Market Intelligence</div>
+            <div class="rc-desc">Farmgate price signals, post-harvest loss indicators, smallholder input access, and food security alerts across Ghana and ECOWAS.</div>
+            <div class="rc-meta">
+              <span class="badge badge-trusted">Trusted</span>
+              <span style="font-size:10px;color:var(--text-dim);">89 signals · λ=0.035</span>
+            </div>
+          </div>
+          <div class="research-card">
+            <div class="rc-icon">🏦</div>
+            <div class="rc-title">Financial Inclusion Signal Set</div>
+            <div class="rc-desc">Mobile money flows, SME credit access, Susu group activity, PAPSS cross-border payment intelligence across West Africa.</div>
+            <div class="rc-meta">
+              <span class="badge badge-trusted">Trusted</span>
+              <span style="font-size:10px;color:var(--text-dim);">312 signals · λ=0.347</span>
+            </div>
+          </div>
+          <div class="research-card">
+            <div class="rc-icon">🏥</div>
+            <div class="rc-title">Health System Capacity Analysis</div>
+            <div class="rc-desc">Facility bed capacity, CHW signal validity, NHIA coverage gaps, disease surveillance, and maternal health corridor data.</div>
+            <div class="rc-meta">
+              <span class="badge badge-provisional">Provisional</span>
+              <span style="font-size:10px;color:var(--text-dim);">147 signals · λ=0.693</span>
+            </div>
+          </div>
+          <div class="research-card">
+            <div class="rc-icon">⚡</div>
+            <div class="rc-title">Energy Access & Grid Intelligence</div>
+            <div class="rc-desc">Grid load balance, fuel stock levels, off-grid solar coverage, rural electrification rates, and WAPP interconnect signals.</div>
+            <div class="rc-meta">
+              <span class="badge badge-provisional">Provisional</span>
+              <span style="font-size:10px;color:var(--text-dim);">204 signals · λ=0.231</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sector data table -->
+        <div class="section-label">Sector confidence index — current snapshot</div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sector</th>
+                <th>Signals</th>
+                <th>Confidence</th>
+                <th>24HAE Score</th>
+                <th>Inclusion</th>
+                <th>Contradictions</th>
+                <th>State</th>
+              </tr>
+            </thead>
+            <tbody id="researchTable"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:20px;" class="card card-sm">
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.65;">
+            <strong style="color:var(--text);display:block;margin-bottom:4px;">Research data access</strong>
+            Full sector signal datasets are available via <code style="font-family:var(--mono);color:var(--gold);">POST /v1/university/research-intelligence</code>. 
+            Datasets are provided at L3 continental consent level. Citizen-level PII is prohibited from all research exports. 
+            Citation: Dr. David King Boison, AFRICA-OS Ω v1.3, Continental Federation Schema (2026).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW 5: CORRIDOR MAP ── -->
+    <div id="view-corridors" class="view">
+      <div class="page-header">
+        <div class="page-eyebrow">AfCFTA Federation · ECOWAS West Africa Zone</div>
+        <div class="page-title"><em>Corridor</em> Intelligence Map</div>
+        <div class="page-sub">Real-time health scores for AfCFTA trade corridors · Signal sharing under sovereign consent architecture.</div>
+      </div>
+      <div class="page-content">
+        <div class="corridor-layout">
+
+          <!-- SVG Africa Map -->
+          <div class="map-container">
+            <div class="section-label" style="margin-bottom:16px;">West Africa corridor network</div>
+            <svg width="100%" viewBox="0 0 500 420" style="display:block;">
+              <defs>
+                <marker id="carr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </marker>
+              </defs>
+
+              <!-- Nation shapes (simplified polygons) -->
+              <!-- Ghana -->
+              <polygon points="155,220 175,200 200,205 205,230 195,260 175,265 155,250" fill="rgba(184,134,11,0.20)" stroke="#B8860B" stroke-width="1.5" stroke-opacity="0.6"/>
+              <text x="178" y="238" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" font-weight="500" fill="#D4A017">GH</text>
+
+              <!-- Burkina Faso -->
+              <polygon points="155,160 180,148 220,152 230,170 215,195 185,198 158,185" fill="rgba(64,144,216,0.12)" stroke="#4090D8" stroke-width="1" stroke-opacity="0.5"/>
+              <text x="192" y="175" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="#4090D8">BF</text>
+
+              <!-- Mali -->
+              <polygon points="80,110 155,100 180,120 175,148 155,160 130,155 85,145 70,130" fill="rgba(64,144,216,0.10)" stroke="#4090D8" stroke-width="1" stroke-opacity="0.4"/>
+              <text x="125" y="133" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="#4090D8">ML</text>
+
+              <!-- Niger -->
+              <polygon points="220,90 290,88 300,115 280,140 250,148 230,170 215,152 220,120" fill="rgba(64,144,216,0.09)" stroke="#4090D8" stroke-width="1" stroke-opacity="0.3"/>
+              <text x="258" y="118" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="#4090D8">NE</text>
+
+              <!-- Nigeria -->
+              <polygon points="200,205 230,195 280,198 295,220 290,260 260,270 230,265 205,255" fill="rgba(42,191,122,0.12)" stroke="#2ABF7A" stroke-width="1" stroke-opacity="0.5"/>
+              <text x="248" y="235" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="#2ABF7A">NG</text>
+
+              <!-- Togo -->
+              <polygon points="200,205 210,210 212,250 205,265 195,260" fill="rgba(64,144,216,0.10)" stroke="#4090D8" stroke-width="1" stroke-opacity="0.4"/>
+              <text x="204" y="233" text-anchor="middle" font-family="Geist Mono, monospace" font-size="8" fill="#4090D8">TG</text>
+
+              <!-- Benin -->
+              <polygon points="212,205 230,195 232,220 228,260 212,255 210,220" fill="rgba(64,144,216,0.08)" stroke="#4090D8" stroke-width="0.8" stroke-opacity="0.3"/>
+              <text x="222" y="232" text-anchor="middle" font-family="Geist Mono, monospace" font-size="8" fill="#4090D8">BJ</text>
+
+              <!-- Côte d'Ivoire -->
+              <polygon points="100,220 130,210 155,220 155,250 145,275 118,278 95,260 90,238" fill="rgba(42,191,122,0.10)" stroke="#2ABF7A" stroke-width="1" stroke-opacity="0.4"/>
+              <text x="124" y="250" text-anchor="middle" font-family="Geist Mono, monospace" font-size="8" fill="#2ABF7A">CI</text>
+
+              <!-- Tema Port dot -->
+              <circle cx="185" cy="268" r="6" fill="#B8860B" opacity="0.9"/>
+              <circle cx="185" cy="268" r="10" fill="none" stroke="#B8860B" stroke-width="1" opacity="0.4"/>
+              <text x="185" y="285" text-anchor="middle" font-family="Geist, sans-serif" font-size="9" fill="#D4A017">Tema</text>
+
+              <!-- CORRIDORS -->
+              <!-- Tema → Ouagadougou (healthy - green) -->
+              <line x1="185" y1="262" x2="192" y2="192" stroke="#2ABF7A" stroke-width="2.5" stroke-opacity="0.85" marker-end="url(#carr)" stroke-dasharray="0"/>
+              <text x="178" y="228" text-anchor="end" font-family="Geist Mono, monospace" font-size="9" fill="#2ABF7A" opacity="0.9">0.82</text>
+
+              <!-- Tema → Bamako (stressed - amber) -->
+              <line x1="183" y1="260" x2="125" y2="140" stroke="#E08C20" stroke-width="2" stroke-opacity="0.80" marker-end="url(#carr)" stroke-dasharray="5 3"/>
+              <text x="148" y="205" text-anchor="end" font-family="Geist Mono, monospace" font-size="9" fill="#E08C20" opacity="0.9">0.64</text>
+
+              <!-- Tema → Niamey (stressed) -->
+              <line x1="187" y1="260" x2="258" y2="128" stroke="#E08C20" stroke-width="1.8" stroke-opacity="0.70" marker-end="url(#carr)" stroke-dasharray="5 3"/>
+              <text x="232" y="200" text-anchor="start" font-family="Geist Mono, monospace" font-size="9" fill="#E08C20" opacity="0.9">0.61</text>
+
+              <!-- ECOWAS region boundary (dashed) -->
+              <rect x="70" y="85" width="250" height="210" rx="12" fill="none" stroke="rgba(184,134,11,0.20)" stroke-width="1" stroke-dasharray="6 4"/>
+              <text x="85" y="102" font-family="Geist, sans-serif" font-size="9" fill="rgba(184,134,11,0.50)" letter-spacing="0.08em">ECOWAS ZONE</text>
+
+              <!-- Legend -->
+              <line x1="20" y1="340" x2="44" y2="340" stroke="#2ABF7A" stroke-width="2"/>
+              <text x="50" y="344" font-family="Geist, sans-serif" font-size="10" fill="rgba(232,220,200,0.60)">Healthy ≥0.75</text>
+              <line x1="20" y1="358" x2="44" y2="358" stroke="#E08C20" stroke-width="2" stroke-dasharray="5 3"/>
+              <text x="50" y="362" font-family="Geist, sans-serif" font-size="10" fill="rgba(232,220,200,0.60)">Stressed 0.50–0.74</text>
+              <line x1="20" y1="376" x2="44" y2="376" stroke="#E04040" stroke-width="2" stroke-dasharray="3 3"/>
+              <text x="50" y="380" font-family="Geist, sans-serif" font-size="10" fill="rgba(232,220,200,0.60)">Disrupted &lt;0.50</text>
+
+              <circle cx="26" cy="393" r="5" fill="#B8860B" opacity="0.9"/>
+              <text x="50" y="397" font-family="Geist, sans-serif" font-size="10" fill="rgba(232,220,200,0.60)">Port / Anchor node</text>
+            </svg>
+          </div>
+
+          <!-- Corridor detail cards -->
+          <div class="corridor-cards" id="corridorCards"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════
+function updateClock() {
+  const n = new Date();
+  const p = v => String(v).padStart(2,'0');
+  document.getElementById('clock').textContent =
+    `${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const viewMap = {
+    'situation': 'view-situation', 'signals': 'view-signals',
+    'entrepreneur': 'view-entrepreneur', 'university': 'view-university',
+    'corridors': 'view-corridors',
+  };
+  const el = document.getElementById(viewMap[id] || 'view-situation');
+  if (el) el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+// DATA MODEL
+// ══════════════════════════════════════════════════
+const SECTORS = [
+  { id:'health',     n:'Health',      ic:'🏥', pri:'CRITICAL', conf:0.82, hae:0.74, incl:0.68, cont:2, sigs:147,
+    alerts:[{t:'red','m':'Korle Bu ICU: 3 beds remaining'},{t:'amber',m:'Drug stock signal below threshold'}]
+  },
+  { id:'agriculture',n:'Agriculture', ic:'🌾', pri:'CRITICAL', conf:0.76, hae:0.85, incl:0.72, cont:0, sigs:89,
+    alerts:[{t:'amber',m:'Techiman price signal: contradiction'},{t:'green',m:'Input availability stable'}]
+  },
+  { id:'finance',    n:'Finance',     ic:'🏦', pri:'CRITICAL', conf:0.88, hae:0.70, incl:0.61, cont:0, sigs:312,
+    alerts:[{t:'green',m:'GhIPSS float: within normal range'},{t:'amber',m:'SME credit: below benchmark'}]
+  },
+  { id:'energy',     n:'Energy',      ic:'⚡', pri:'CRITICAL', conf:0.71, hae:0.63, incl:0.58, cont:3, sigs:204,
+    alerts:[{t:'red',m:'Fuel stock: < 72-hour reserve'},{t:'red',m:'Grid load: 3 contradictions'}]
+  },
+  { id:'transport',  n:'Transport',   ic:'🚛', pri:'HIGH',     conf:0.79, hae:0.77, incl:0.65, cont:0, sigs:76,
+    alerts:[{t:'green',m:'Corridor Tema–Ouaga: clear'},{t:'amber',m:'Tamale junction: moderate congestion'}]
+  },
+  { id:'education',  n:'Education',   ic:'🎓', pri:'HIGH',     conf:0.78, hae:0.82, incl:0.74, cont:0, sigs:34,
+    alerts:[{t:'green',m:'TVET enrollment: +12% YTD'}]
+  },
+  { id:'governance', n:'Governance',  ic:'🏛️', pri:'HIGH',     conf:0.83, hae:0.72, incl:0.66, cont:0, sigs:28,
+    alerts:[{t:'green',m:'Q1 budget: 68% on track'},{t:'amber',m:'2 procurement signals flagged'}]
+  },
+  { id:'ports',      n:'Ports',       ic:'⚓', pri:'HIGH',     conf:0.85, hae:0.80, incl:0.60, cont:0, sigs:192,
+    alerts:[{t:'green',m:'Tema port: operations stable'},{t:'amber',m:'Clearance time: 3.2 days avg'}]
+  },
+];
+
+const SECTOR_COLOURS = {
+  health:'#E04040', agriculture:'#2ABF7A', finance:'#4090D8',
+  energy:'#E08C20', transport:'#9060D0', education:'#E08080',
+  governance:'#B8860B', ports:'#20B0B0',
+};
+
+const ESCALATIONS = [
+  { id:'ESC-001A', obj:'Korle Bu ICU capacity critical threshold', sec:'health',      pri:'CRITICAL', age:12, sla:15 },
+  { id:'ESC-002B', obj:'Energy fuel stock below 72-hour reserve', sec:'energy',       pri:'CRITICAL', age:34, sla:30 },
+  { id:'ESC-003C', obj:'Grid load: 3 severe contradictions',       sec:'energy',       pri:'HIGH',     age:18, sla:60 },
+  { id:'ESC-004D', obj:'Techiman price signal contradiction',       sec:'agriculture',  pri:'HIGH',     age:67, sla:120 },
+];
+
+const SIGNAL_POOL = [
+  { type:'bed_capacity_signal',   src:'korle_bu_emr',   sec:'health',      f:0.97 },
+  { type:'liquidity_signal',      src:'bog_rtgs',        sec:'finance',     f:0.99 },
+  { type:'grid_load_signal',      src:'gridco_scada',    sec:'energy',      f:0.85 },
+  { type:'farmgate_price_signal', src:'esoko_feed',      sec:'agriculture', f:0.74 },
+  { type:'vessel_arrival_eta',    src:'ais_feed',        sec:'ports',       f:0.94 },
+  { type:'corridor_status',       src:'gha_survey',      sec:'transport',   f:0.82 },
+  { type:'mobile_money_tx',       src:'ghipss_api',      sec:'finance',     f:0.99 },
+  { type:'fuel_stock_signal',     src:'gnpc_operator',   sec:'energy',      f:0.76 },
+  { type:'drug_stock_level',      src:'ghs_dhims2',      sec:'health',      f:0.91 },
+  { type:'budget_execution',      src:'mof_gifmis',      sec:'governance',  f:0.61 },
+  { type:'enrollment_signal',     src:'ges_emis',        sec:'education',   f:0.55 },
+  { type:'berth_occupancy',       src:'gpha_pms',        sec:'ports',       f:0.92 },
+];
+
+// ══════════════════════════════════════════════════
+// COLOUR HELPERS
+// ══════════════════════════════════════════════════
+function confColour(v) {
+  if (v>=0.80) return 'var(--green)';
+  if (v>=0.60) return 'var(--amber)';
+  return 'var(--red)';
+}
+function sectorStatus(s) {
+  if (s.conf < 0.65 || s.cont >= 2) return 'status-red';
+  if (s.conf < 0.78 || s.cont > 0)  return 'status-amber';
+  return 'status-green';
+}
+function fillClass(v) {
+  if (v>=0.78) return 'fill-green';
+  if (v>=0.60) return 'fill-amber';
+  return 'fill-red';
+}
+
+// ══════════════════════════════════════════════════
+// RENDER SECTOR GRID
+// ══════════════════════════════════════════════════
+function renderSectorGrid() {
+  const grid = document.getElementById('sectorGrid');
+  grid.innerHTML = SECTORS.map(s => `
+    <div class="sector-card ${sectorStatus(s)}" onclick="showView('situation')">
+      <div class="sc-head">
+        <span class="sc-icon">${s.ic}</span>
+        <span class="badge ${s.pri==='CRITICAL'?'badge-critical':'badge-high'}">${s.pri}</span>
+      </div>
+      <div class="sc-name">${s.n}</div>
+      <div class="sc-bar-track">
+        <div class="sc-bar-fill ${fillClass(s.conf)}" style="width:${Math.round(s.conf*100)}%"></div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric">
+          <div class="sc-metric-val" style="color:${confColour(s.conf)}">${Math.round(s.conf*100)}%</div>
+          <div class="sc-metric-lbl">Conf</div>
+        </div>
+        <div class="sc-metric">
+          <div class="sc-metric-val" style="color:${confColour(s.hae)}">${Math.round(s.hae*100)}%</div>
+          <div class="sc-metric-lbl">24HAE</div>
+        </div>
+        <div class="sc-metric">
+          <div class="sc-metric-val" style="color:${s.cont>0?'var(--red)':'var(--green)'}">${s.cont}</div>
+          <div class="sc-metric-lbl">Cntr</div>
+        </div>
+      </div>
+      <div>
+        ${s.alerts.map(a=>`<div class="sc-alert ${a.t}">${a.m}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// RENDER ESCALATIONS
+// ══════════════════════════════════════════════════
+function renderEscalations() {
+  const list = document.getElementById('escList');
+  list.innerHTML = ESCALATIONS.map(e => {
+    const pct   = e.age / e.sla * 100;
+    const slaCl = pct>=100 ? 'c-red' : pct>=70 ? 'c-amber' : 'c-green';
+    const slaTx = pct>=100 ? 'SLA BREACHED' : `${Math.round(e.sla-e.age)}m remain`;
+    const dotCl = e.pri==='CRITICAL' ? 'background:var(--red)' : 'background:var(--amber)';
+    return `
+    <div class="esc-item">
+      <div class="esc-dot" style="${dotCl}"></div>
+      <div class="esc-body">
+        <div class="esc-obj">${e.obj}</div>
+        <div class="esc-meta">
+          <span>${e.sec}</span>
+          <span>${e.age}m ago</span>
+          <span class="${slaCl}">${slaTx}</span>
+        </div>
+      </div>
+      <button class="esc-btn">REVIEW</button>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// LIVE SIGNAL STREAM
+// ══════════════════════════════════════════════════
+let sigTotal = 0;
+function addSignal() {
+  const s = SIGNAL_POOL[Math.floor(Math.random()*SIGNAL_POOL.length)];
+  const f = Math.max(0.30, s.f+(Math.random()*0.08-0.04));
+  const fc = f>=0.80?'c-green':f>=0.50?'c-amber':'c-red';
+  const col = SECTOR_COLOURS[s.sec]||'#4090D8';
+  const now = new Date();
+  const t = `${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  sigTotal++;
+  document.getElementById('sigCount').textContent = `${sigTotal} signals`;
+  document.getElementById('sigBadge').textContent = sigTotal;
+  const list = document.getElementById('signalList');
+  const row = document.createElement('div');
+  row.className = 'sig-row';
+  row.innerHTML = `
+    <div class="sig-dot" style="background:${col};box-shadow:0 0 4px ${col}50"></div>
+    <span class="sig-type">${s.type}</span>
+    <span class="sig-src">${s.src}</span>
+    <span class="sig-fresh ${fc}">${Math.round(f*100)}%</span>
+    <span class="sig-time">${t}</span>`;
+  list.prepend(row);
+  if (list.children.length > 18) list.removeChild(list.lastChild);
+}
+
+// ══════════════════════════════════════════════════
+// RESEARCH TABLE
+// ══════════════════════════════════════════════════
+function renderResearchTable() {
+  const tb = document.getElementById('researchTable');
+  if (!tb) return;
+  tb.innerHTML = SECTORS.map(s => {
+    const state = s.conf>=0.85?'trusted':s.conf>=0.60?'provisional':s.conf>=0.30?'conflicted':'blocked';
+    return `<tr>
+      <td>${s.ic} ${s.n}</td>
+      <td style="font-family:var(--mono)">${s.sigs}</td>
+      <td style="font-family:var(--mono);color:${confColour(s.conf)}">${Math.round(s.conf*100)}%</td>
+      <td style="font-family:var(--mono);color:${confColour(s.hae)}">${Math.round(s.hae*100)}%</td>
+      <td style="font-family:var(--mono);color:${confColour(s.incl)}">${Math.round(s.incl*100)}%</td>
+      <td style="font-family:var(--mono);color:${s.cont>0?'var(--red)':'var(--green)'}">${s.cont}</td>
+      <td><span class="badge badge-${state}">${state}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// CORRIDOR CARDS
+// ══════════════════════════════════════════════════
+const CORRIDORS = [
+  { id:'TEMA-OUAGA', name:'Tema–Ouagadougou', nations:'GH · BF', score:0.82, status:'healthy',
+    border:0.88, flow:0.85, ntb:0.76, infra:0.80, payment:0.79 },
+  { id:'TEMA-BAMAKO', name:'Tema–Bamako',      nations:'GH · ML', score:0.64, status:'stressed',
+    border:0.62, flow:0.70, ntb:0.55, infra:0.68, payment:0.60 },
+  { id:'TEMA-NIAMEY', name:'Tema–Niamey',      nations:'GH · NE', score:0.61, status:'stressed',
+    border:0.58, flow:0.65, ntb:0.52, infra:0.65, payment:0.58 },
+  { id:'ECOWAS-WEST', name:'ECOWAS West Zone', nations:'16 nations', score:0.73, status:'stable',
+    border:0.74, flow:0.76, ntb:0.68, infra:0.72, payment:0.70 },
+];
+
+function renderCorridors() {
+  const el = document.getElementById('corridorCards');
+  if (!el) return;
+  el.innerHTML = CORRIDORS.map((c,i) => {
+    const sc = c.score>=0.75?'var(--green)':c.score>=0.50?'var(--amber)':'var(--red)';
+    const dims = [
+      {l:'Border efficiency', v:c.border},
+      {l:'Commodity flow',    v:c.flow},
+      {l:'Non-tariff barriers',v:c.ntb},
+      {l:'Infrastructure',   v:c.infra},
+      {l:'Payment facilitation',v:c.payment},
+    ];
+    return `
+    <div class="corridor-card${i===0?' selected':''}" onclick="selectCorridor(this)">
+      <div class="cc-head">
+        <div>
+          <div class="cc-name">${c.name}</div>
+          <div class="cc-nations">${c.nations}</div>
+        </div>
+        <div class="cc-score" style="color:${sc}">${Math.round(c.score*100)}%</div>
+      </div>
+      <div class="cc-bars">
+        ${dims.map(d=>`
+          <div class="score-row" style="margin-bottom:4px;">
+            <span class="score-label" style="font-size:10px;width:110px;">${d.l}</span>
+            <div class="score-track"><div class="score-fill ${d.v>=0.75?'fill-green':d.v>=0.50?'fill-amber':'fill-red'}" style="width:${Math.round(d.v*100)}%"></div></div>
+            <span class="score-val ${d.v>=0.75?'c-green':d.v>=0.50?'c-amber':'c-red'}">${Math.round(d.v*100)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectCorridor(el) {
+  document.querySelectorAll('.corridor-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ══════════════════════════════════════════════════
+// ENTREPRENEUR ANALYSIS
+// ══════════════════════════════════════════════════
+let entActiveSector = 'health';
+const ENT_STEPS = ['Ingesting signals…','Computing freshness decay…','Checking contradictions…','Running 24HAE policy gate…','Scoring inclusion…','Reasoning with Ubuntu lens…','Generating governed decision…'];
+let entThinkInterval;
+
+function entSelectSector(el) {
+  document.querySelectorAll('.sector-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  entActiveSector = el.dataset.sector;
+}
+
+function entQuick(q, sec) {
+  document.getElementById('entQuery').value = q;
+  const chip = document.querySelector(`[data-sector="${sec}"]`);
+  if (chip) entSelectSector(chip);
+  runEntAnalysis();
+}
+
+const ENT_DATA = {
+  health:      { conf:0.82, hae:0.74, incl:0.68, state:'provisional', escalate:false,
+    action:'Provisional confidence. Seek additional verification before committing resources.',
+    summary:'Health sector signals for Ghana show moderate confidence. Community health worker data is available but facility-level bed capacity needs verification against GHS dashboard before operational decisions.',
+    ubuntu:'Engage community health committees before implementing any service changes that affect access.',
+    hae:'Health worker availability directly sustains 24-hour productive capacity. Prioritise CHPS compound staffing.',
+    cont:1 },
+  agriculture: { conf:0.76, hae:0.85, incl:0.72, state:'provisional', escalate:false,
+    action:'Market conditions support action. Verify farmgate prices against Techiman market data.',
+    summary:'Agricultural signals indicate stable commodity pricing with moderate input availability. Smallholder access to certified seed stock is a key constraint in Northern regions this planting season.',
+    ubuntu:'Coordinate with farmer cooperatives before major market entry to avoid undercutting smallholder producers.',
+    hae:'Post-harvest loss reduction directly increases value retained in-country.',
+    cont:0 },
+  finance:     { conf:0.88, hae:0.70, incl:0.61, state:'trusted', escalate:false,
+    action:'Sufficient confidence to proceed. Mobile money float levels are stable.',
+    summary:'Finance sector signals are strong. GhIPSS transaction volumes within normal range. SME credit access remains constrained for informal operators.',
+    ubuntu:'Susu groups carry valid financial intelligence. Include them in your risk assessment.',
+    hae:'Mobile money float stability is critical to 24-hour continuity for informal operators.',
+    cont:0 },
+  energy:      { conf:0.71, hae:0.63, incl:0.58, state:'provisional', escalate:true,
+    action:'Grid conditions are provisional. Consider backup power contingency for critical operations.',
+    summary:'Energy sector signals show moderate reliability. Fuel stock indicators below optimal levels for thermal generation. Contradictions detected in grid load reporting.',
+    ubuntu:'Energy outages disproportionately affect small enterprises without backup power.',
+    hae:'Reliable energy is the physical prerequisite for a 24-hour economy.',
+    cont:3 },
+  transport:   { conf:0.79, hae:0.77, incl:0.65, state:'provisional', escalate:false,
+    action:'Corridor conditions provisionally clear. Verify border crossing times before scheduling time-sensitive freight.',
+    summary:'Transport corridor signals indicate normal operations on major routes. Northern corridor has moderate congestion near Tamale junction.',
+    ubuntu:'Coordinate with commercial driver associations for real-time route intelligence.',
+    hae:'Freight movement is the circulatory system of the 24-hour economy.',
+    cont:0 },
+  ports:       { conf:0.85, hae:0.80, incl:0.60, state:'trusted', escalate:false,
+    action:'Port operations stable. Customs clearance averaging 3.2 days.',
+    summary:'Tema port signals are strong. Vessel queue within normal range. Container yard at 72% utilisation.',
+    ubuntu:'MSME importers face disproportionate customs delays. Advocate for dedicated SME clearance lanes.',
+    hae:'Port efficiency is directly linked to 24-hour economy competitiveness.',
+    cont:0 },
+};
+
+async function runEntAnalysis() {
+  const q = document.getElementById('entQuery').value.trim();
+  if (!q) return;
+  document.getElementById('entResult').classList.remove('show');
+  document.getElementById('entThinking').classList.add('show');
+  document.getElementById('entBtn').disabled = true;
+
+  let step = 0;
+  entThinkInterval = setInterval(()=>{
+    document.getElementById('entThinkText').textContent = ENT_STEPS[step%ENT_STEPS.length];
+    step++;
+  }, 850);
+
+  await new Promise(r=>setTimeout(r, 3400+Math.random()*1000));
+  clearInterval(entThinkInterval);
+  document.getElementById('entThinking').classList.remove('show');
+  document.getElementById('entBtn').disabled = false;
+
+  const d = ENT_DATA[entActiveSector] || ENT_DATA.health;
+  const stateMap = { trusted:'badge-trusted', provisional:'badge-provisional', blocked:'badge-blocked', conflicted:'badge-conflicted' };
+
+  document.getElementById('entResultSector').textContent = entActiveSector.toUpperCase();
+  const badge = document.getElementById('entResultBadge');
+  badge.textContent = d.state.toUpperCase();
+  badge.className = 'badge ' + (stateMap[d.state]||'badge-provisional');
+  document.getElementById('entResultAction').textContent = d.action;
+  document.getElementById('entResultSummary').textContent = d.summary;
+
+  // Scores
+  const sc = (v) => v>=0.78?'fill-green':v>=0.55?'fill-amber':'fill-red';
+  const cv = (v) => v>=0.78?'c-green':v>=0.55?'c-amber':'c-red';
+  document.getElementById('entScores').innerHTML = [
+    {l:'Confidence', v:d.conf},{l:'24H Economy', v:d.hae},{l:'Inclusion', v:d.incl}
+  ].map(m=>`
+    <div class="metric-card">
+      <div class="metric-val ${cv(m.v)}">${Math.round(m.v*100)}%</div>
+      <div class="metric-lbl">${m.l}</div>
+    </div>`).join('');
+
+  // Insights
+  let ins = `
+    <div class="insight-row ubuntu">
+      <div><div class="insight-label c-gold">Ubuntu lens</div>
+      <div class="insight-body">${d.ubuntu}</div></div>
+    </div>
+    <div class="insight-row hae">
+      <div><div class="insight-label c-green">24-Hour Economy</div>
+      <div class="insight-body">${d.hae}</div></div>
+    </div>`;
+  if (d.cont>0) ins += `
+    <div class="insight-row warning">
+      <div><div class="insight-label c-amber">Signal conflict</div>
+      <div class="insight-body">${d.cont} contradicting signal(s) detected. Verify before acting.</div></div>
+    </div>`;
+  document.getElementById('entInsights').innerHTML = ins;
+
+  // Actions
+  document.getElementById('entActions').innerHTML = [
+    d.action,
+    'Document all signal sources for your own audit trail.',
+    'Notify your sector cooperative or business association of your decision.',
+  ].map(a=>`<div class="action-item"><div class="action-dot"></div><div>${a}</div></div>`).join('');
+
+  document.getElementById('entEscAlert').style.display = d.escalate?'block':'none';
+  document.getElementById('entResult').classList.add('show');
+}
+
+// Enter key
+document.getElementById('entQuery')?.addEventListener('keydown', e=>{
+  if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();runEntAnalysis();}
+});
+
+// ══════════════════════════════════════════════════
+// LIVE METRIC DRIFT
+// ══════════════════════════════════════════════════
+function tickMetrics() {
+  SECTORS.forEach(s=>{
+    s.conf = Math.max(0.42, Math.min(0.96, s.conf+(Math.random()*0.04-0.02)));
+    s.hae  = Math.max(0.42, Math.min(0.96, s.hae +(Math.random()*0.03-0.015)));
+  });
+  renderSectorGrid();
+  const avg = v => Math.round(SECTORS.reduce((a,s)=>a+s[v],0)/SECTORS.length*100)+'%';
+  document.getElementById('kpiConf').textContent = avg('conf');
+  document.getElementById('kpiHae').textContent  = avg('hae');
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+renderSectorGrid();
+renderEscalations();
+renderResearchTable();
+renderCorridors();
+for (let i=0;i<6;i++) addSignal();
+setInterval(addSignal, 2000+Math.random()*1000);
+setInterval(tickMetrics, 7000);
+setInterval(()=>{ ESCALATIONS.forEach(e=>e.age+=0.1); renderEscalations(); }, 6000);
+</script>
+</body>
+</html>
