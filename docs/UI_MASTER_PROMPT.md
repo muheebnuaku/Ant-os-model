@@ -213,9 +213,10 @@ inside a legend.
 
 ### 5.5 Motion
 
-- 150–200 ms ease-out for hover, expand, drawer open and tab change. Nothing
-  loops except a small spinner while waiting, and a gentle pulse on the "live"
-  indicator.
+- 150–200 ms ease-out for hover, expand, drawer open and close, dialog open and
+  close, and tab or segment change (the underline or thumb slides to the new
+  choice). A page fades in over 150 ms. Nothing loops except a small spinner
+  while waiting, and a gentle pulse on the "live" indicator.
 - No page-load choreography, staggered card entrances, parallax or bouncing.
 - Respect `prefers-reduced-motion` (all motion off).
 
@@ -225,8 +226,14 @@ inside a legend.
 
 **Buttons.** Primary (filled accent, white text): one per section. Secondary
 (surface, 1 px border). Tertiary (text only, accent color). Destructive
-(secondary style with a critical-colored label). Height 36 px (32 px compact).
-Label is a verb: "Resolve", "Verify decision", "Export".
+(secondary style with a critical-colored label). Height 32 px, 13 px medium
+text (28 px compact variant). Label is a verb: "Resolve", "Verify decision",
+"Export". Buttons show a brief press response and a spinner while busy.
+
+**Density.** All controls, table rows and navigation items take their size
+from shared tokens. The user menu offers Compact (28 px controls, 36 px rows),
+Standard (32 px / 44 px, the default) and Comfortable (36 px / 52 px), applied
+everywhere at once and remembered per browser.
 
 **KPI tile.** Caption label (top), value (32 px), then one line of context
 (comparison like "+3 vs previous 24 h", or a status badge). Equal widths in a

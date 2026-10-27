@@ -4,7 +4,7 @@ import { Copy } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { DataTable } from "@/components/DataTable";
-import { Badge, Dialog, ErrorNotice, Kpi, Kpis, Notice, PageHeader, Section, Time, humanize, who } from "@/components/ui";
+import { Badge, CancelButton, Dialog, ErrorNotice, Kpi, Kpis, Notice, PageHeader, Section, Time, humanize, who } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useApi, useNow } from "@/lib/hooks";
 import { useSession } from "@/lib/session";
@@ -111,7 +111,7 @@ export default function AccessPage() {
               </div>
             </fieldset>
             <div className="dialog-actions">
-              <button type="button" className="btn" onClick={() => setIssuing(false)}>Cancel</button>
+              <CancelButton />
               <button type="submit" className="btn btn-primary" disabled={busy || !name.trim() || !roles.length}>Issue key</button>
             </div>
           </form>
@@ -124,7 +124,7 @@ export default function AccessPage() {
           <pre className="json" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{issued.token}</pre>
           <div className="dialog-actions">
             <button type="button" className="btn" onClick={() => { void navigator.clipboard.writeText(issued.token); setCopied(true); }}><Copy size={16} strokeWidth={1.75} aria-hidden />{copied ? "Copied" : "Copy key"}</button>
-            <button type="button" className="btn btn-primary" onClick={() => { setIssued(null); setCopied(false); }}>Done</button>
+            <CancelButton className="btn btn-primary">Done</CancelButton>
           </div>
         </Dialog>
       ) : null}
@@ -133,7 +133,7 @@ export default function AccessPage() {
         <Dialog title="Revoke access key" onClose={() => setRevoking(null)}>
           <p className="t-secondary">“{revoking.name}” will stop working immediately. This is recorded and cannot be undone.</p>
           <div className="dialog-actions">
-            <button type="button" className="btn" onClick={() => setRevoking(null)}>Cancel</button>
+            <CancelButton />
             <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void revoke(revoking)}>Revoke key</button>
           </div>
         </Dialog>

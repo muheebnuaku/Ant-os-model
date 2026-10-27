@@ -10,7 +10,16 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 /* Shared components per docs/UI_MASTER_PROMPT.md §6. */
 
@@ -214,11 +223,32 @@ export function SkeletonRows({ rows = 4 }: { rows?: number }) {
   );
 }
 
+/** Slides a marker (thumb or underline) to the selected item of a row of buttons. */
+function useSlidingMarker(selected: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const measure = () => {
+      const el = root.querySelector<HTMLElement>(`[data-key="${CSS.escape(selected)}"]`);
+      setBox(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [selected]);
+  return { ref, box };
+}
+
 export function Segmented<T extends string | number>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+  const { ref, box } = useSlidingMarker(String(value));
   return (
-    <div className="segmented" role="group" aria-label={label}>
+    <div className="segmented" role="group" aria-label={label} ref={ref}>
+      {box ? <span className="segmented-thumb" aria-hidden style={{ width: box.width, transform: `translateX(${box.left}px)` }} /> : null}
       {options.map((o) => (
-        <button key={String(o.value)} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
+        <button key={String(o.value)} data-key={String(o.value)} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
           {o.label}
         </button>
       ))}
@@ -227,58 +257,88 @@ export function Segmented<T extends string | number>({ options, value, onChange,
 }
 
 export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  const { ref, box } = useSlidingMarker(value);
   return (
-    <div className="tabs" role="tablist">
+    <div className="tabs" role="tablist" ref={ref}>
       {tabs.map((t) => (
-        <button key={t.value} type="button" role="tab" className="tab" aria-selected={t.value === value} onClick={() => onChange(t.value)}>
+        <button key={t.value} data-key={t.value} type="button" role="tab" className="tab" aria-selected={t.value === value} onClick={() => onChange(t.value)}>
           {t.label}
         </button>
       ))}
+      {box ? <span className="tab-indicator" aria-hidden style={{ width: box.width, transform: `translateX(${box.left}px)` }} /> : null}
     </div>
   );
 }
 
-function useEscape(onClose: () => void) {
+const EXIT_MS = 160;
+const CloseContext = createContext<() => void>(() => undefined);
+
+/** Inside a Drawer or Dialog: close it with its exit animation. */
+export function useClose(): () => void {
+  return useContext(CloseContext);
+}
+
+/** Plays the exit animation, then calls onClose. Escape closes too. */
+function useAnimatedClose(onClose: () => void): [boolean, () => void] {
+  const [closing, setClosing] = useState(false);
+  const started = useRef(false);
+  const close = useCallback(() => {
+    if (started.current) return;
+    started.current = true;
+    setClosing(true);
+    setTimeout(onClose, EXIT_MS);
+  }, [onClose]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [close]);
+  return [closing, close];
 }
 
 export function Drawer({ title, eyebrow, status, onClose, children }: { title: string; eyebrow?: string; status?: ReactNode; onClose: () => void; children: ReactNode }) {
-  useEscape(onClose);
+  const [closing, close] = useAnimatedClose(onClose);
   return (
-    <>
-      <div className="scrim" onClick={onClose} />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="drawer-head">
-          <div className="stack-sm">
-            {eyebrow ? <span className="t-caption t-muted">{eyebrow}</span> : null}
-            <h2>{title}</h2>
-            {status ? <div className="row">{status}</div> : null}
+    <CloseContext.Provider value={close}>
+      <div data-closing={closing}>
+        <div className="scrim" onClick={close} />
+        <aside className="drawer" role="dialog" aria-modal="true" aria-label={title}>
+          <div className="drawer-head">
+            <div className="stack-sm">
+              {eyebrow ? <span className="t-caption t-muted">{eyebrow}</span> : null}
+              <h2>{title}</h2>
+              {status ? <div className="row">{status}</div> : null}
+            </div>
+            <button type="button" className="icon-button" onClick={close} aria-label="Close" autoFocus>
+              <X strokeWidth={1.75} />
+            </button>
           </div>
-          <button type="button" className="icon-button" onClick={onClose} aria-label="Close" autoFocus>
-            <X size={20} strokeWidth={1.75} />
-          </button>
-        </div>
-        <div className="drawer-body">{children}</div>
-      </aside>
-    </>
+          <div className="drawer-body">{children}</div>
+        </aside>
+      </div>
+    </CloseContext.Provider>
   );
 }
 
 export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  useEscape(onClose);
+  const [closing, close] = useAnimatedClose(onClose);
   return (
-    <>
-      <div className="scrim" onClick={onClose} />
-      <div className="dialog" role="dialog" aria-modal="true" aria-label={title}>
-        <h2>{title}</h2>
-        {children}
+    <CloseContext.Provider value={close}>
+      <div data-closing={closing}>
+        <div className="scrim" onClick={close} />
+        <div className="dialog" role="dialog" aria-modal="true" aria-label={title}>
+          <h2>{title}</h2>
+          {children}
+        </div>
       </div>
-    </>
+    </CloseContext.Provider>
   );
+}
+
+/** A secondary button that closes the surrounding Drawer or Dialog smoothly. */
+export function CancelButton({ children = "Cancel", className = "btn" }: { children?: ReactNode; className?: string }) {
+  const close = useClose();
+  return <button type="button" className={className} onClick={close}>{children}</button>;
 }
 
 export function Meter({ value, tone }: { value: number | null | undefined; tone?: "critical" | "warning" }) {

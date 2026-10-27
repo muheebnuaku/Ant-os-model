@@ -29,11 +29,11 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { useCrumbState, type Crumb } from "@/lib/crumbs";
 import { useApi } from "@/lib/hooks";
 import { CAN, useSession } from "@/lib/session";
-import { applyTheme, readTheme, type ThemeChoice } from "@/lib/theme";
+import { applyDensity, applyTheme, readDensity, readTheme, type Density, type ThemeChoice } from "@/lib/theme";
 import type { Escalation, NodeStatus } from "@/lib/types";
 
 import { CommandPalette } from "./CommandPalette";
-import { relative, who } from "./ui";
+import { relative, Segmented, who } from "./ui";
 
 /* The application frame (§4.1): sidebar, header bar, content, footer. */
 
@@ -96,8 +96,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const firstRoute = useRef(true);
 
+  const [density, setDensity] = useState<Density>("standard");
   useEffect(() => {
     setTheme(readTheme());
+    setDensity(readDensity());
     try { setCollapsed(localStorage.getItem("antos.sidebar") === "collapsed"); } catch { /* default */ }
   }, []);
 
@@ -185,6 +187,11 @@ export function Shell({ children }: { children: ReactNode }) {
   function chooseTheme(t: ThemeChoice) {
     applyTheme(t);
     setTheme(t);
+  }
+
+  function chooseDensity(d: Density) {
+    applyDensity(d);
+    setDensity(d);
   }
 
   return (
@@ -277,6 +284,12 @@ export function Shell({ children }: { children: ReactNode }) {
                   </button>
                 ))}
                 <hr className="divider" style={{ margin: "4px 0" }} />
+                <div className="menu-label">Density</div>
+                <div style={{ padding: "4px 8px 8px" }}>
+                  <Segmented<Density> label="Density" value={density} onChange={chooseDensity}
+                    options={[{ value: "compact", label: "Compact" }, { value: "standard", label: "Standard" }, { value: "comfortable", label: "Comfortable" }]} />
+                </div>
+                <hr className="divider" style={{ margin: "4px 0" }} />
                 <button type="button" role="menuitem" className="menu-item" onClick={signOut}>
                   <LogOut size={16} strokeWidth={1.75} aria-hidden /> Sign out
                 </button>
@@ -285,7 +298,9 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="content" id="main">{children}</main>
+        <main className="content" id="main">
+          <div key={pathname} className="page-enter">{children}</div>
+        </main>
 
         <footer className="footer">
           <span>ANT-OS Ω / AFRICA-OS Ω, the VPF and the 24-Hour Africa Economy Policy are the work of Dr. David King Boison.</span>

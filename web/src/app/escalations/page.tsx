@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from "react";
 import { DataTable } from "@/components/DataTable";
 import {
   Badge,
+  CancelButton,
   ContextBar,
   Dialog,
   ErrorNotice,
@@ -159,8 +160,9 @@ function ReviewQueue() {
               <span className="field-hint">This note becomes part of the permanent record.</span>
             </label>
             <div className="dialog-actions">
-              <button type="button" className="btn" onClick={() => setResolving(null)}>Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={!note.trim() || busy === resolving.escalation_id}>Resolve</button>
+              <CancelButton />
+              <button type="submit" className="btn btn-primary" disabled={!note.trim() || busy === resolving.escalation_id}
+                aria-busy={busy === resolving.escalation_id}>Resolve</button>
             </div>
           </form>
         </Dialog>
