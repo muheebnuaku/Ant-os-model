@@ -15,3 +15,5 @@ deploy/.env
 keys/
 .vercel/
 *.tsbuildinfo
+.vercel
+.env*
