@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ChevronDown,
   FileCheck2,
   FilePlus2,
   HelpCircle,
@@ -10,11 +9,8 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
-  Menu,
   Monitor,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Radio,
   Search,
   Settings2,
@@ -26,7 +22,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useCrumbState, type Crumb } from "@/lib/crumbs";
 import { useApi } from "@/lib/hooks";
 import { CAN, useSession } from "@/lib/session";
 import { applyDensity, applyTheme, readDensity, readTheme, type Density, type ThemeChoice } from "@/lib/theme";
@@ -35,29 +30,23 @@ import type { Escalation, NodeStatus } from "@/lib/types";
 import { CommandPalette } from "./CommandPalette";
 import { relative, Segmented, who } from "./ui";
 
-/* The application frame (§4.1): sidebar, header bar, content, footer. */
+/* The console frame: charcoal icon rail, workspace, status bar. */
 
 type NavItem = { href: string; label: string; icon: typeof Inbox; need: readonly string[] | null; count?: boolean };
 
-const NAV: { group: string; items: NavItem[] }[] = [
-  { group: "Overview", items: [{ href: "/", label: "Briefing", icon: LayoutDashboard, need: CAN.situation }] },
-  {
-    group: "Operations",
-    items: [
-      { href: "/escalations", label: "Review queue", icon: Inbox, need: null, count: true },
-      { href: "/decisions", label: "Decisions", icon: ListChecks, need: CAN.readDecisions },
-      { href: "/decisions/new", label: "New decision", icon: FilePlus2, need: CAN.decide },
-    ],
-  },
-  { group: "Evidence", items: [{ href: "/signals", label: "Signals", icon: Radio, need: CAN.signals }] },
-  { group: "Assurance", items: [{ href: "/audit", label: "Records & verification", icon: FileCheck2, need: CAN.audit }] },
-  {
-    group: "Administration",
-    items: [
-      { href: "/admin/rules", label: "Rules & configuration", icon: Settings2, need: CAN.configRead },
-      { href: "/admin/access", label: "Access & keys", icon: KeyRound, need: CAN.manageKeys },
-    ],
-  },
+const NAV: NavItem[][] = [
+  [{ href: "/", label: "Briefing", icon: LayoutDashboard, need: CAN.situation }],
+  [
+    { href: "/escalations", label: "Review queue", icon: Inbox, need: null, count: true },
+    { href: "/decisions", label: "Decisions", icon: ListChecks, need: CAN.readDecisions },
+    { href: "/decisions/new", label: "New decision", icon: FilePlus2, need: CAN.decide },
+    { href: "/signals", label: "Signals", icon: Radio, need: CAN.signals },
+    { href: "/audit", label: "Records & verification", icon: FileCheck2, need: CAN.audit },
+  ],
+  [
+    { href: "/admin/rules", label: "Rules & configuration", icon: Settings2, need: CAN.configRead },
+    { href: "/admin/access", label: "Access & keys", icon: KeyRound, need: CAN.manageKeys },
+  ],
 ];
 
 /** "G" then a letter jumps to a section (shown in Help). */
@@ -65,25 +54,11 @@ export const SHORTCUTS: Record<string, string> = {
   b: "/", r: "/escalations", d: "/decisions", n: "/decisions/new", s: "/signals", a: "/audit",
 };
 
-const PATH_LABELS: Record<string, Crumb[]> = {
-  "/": [{ label: "Briefing" }],
-  "/escalations": [{ label: "Review queue" }],
-  "/decisions": [{ label: "Decisions" }],
-  "/decisions/new": [{ label: "Decisions", href: "/decisions" }, { label: "New decision" }],
-  "/signals": [{ label: "Signals" }],
-  "/audit": [{ label: "Records & verification" }],
-  "/admin/rules": [{ label: "Administration" }, { label: "Rules & configuration" }],
-  "/admin/access": [{ label: "Administration" }, { label: "Access & keys" }],
-  "/help": [{ label: "Help" }],
-};
-
 export function Shell({ children }: { children: ReactNode }) {
   const { me, ready, can, signOut } = useSession();
   const pathname = usePathname();
-  const pageCrumbs = useCrumbState();
   const [palette, setPalette] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>("system");
   const menuRef = useRef<HTMLDivElement>(null);
   const signedIn = ready && !!me && pathname !== "/login";
@@ -93,28 +68,29 @@ export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const search = useSearchParams();
   const [navigating, setNavigating] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const firstRoute = useRef(true);
 
   const [density, setDensity] = useState<Density>("standard");
   useEffect(() => {
     setTheme(readTheme());
     setDensity(readDensity());
-    try { setCollapsed(localStorage.getItem("antos.sidebar") === "collapsed"); } catch { /* default */ }
   }, []);
 
-  // Route change finished: stop the progress bar, close mobile nav, and move
-  // focus to the new page's title so keyboard and screen-reader users arrive there.
+  // Route change finished: stop the progress bar and move focus to the new
+  // page's title so keyboard and screen-reader users arrive there.
   useEffect(() => {
     setNavigating(false);
-    setNavOpen(false);
+    setMenu(false);
     if (firstRoute.current) { firstRoute.current = false; return; }
     const id = requestAnimationFrame(() => {
       const h1 = document.querySelector<HTMLElement>("main h1");
       if (h1) { h1.tabIndex = -1; h1.focus({ preventScroll: true }); }
     });
     return () => cancelAnimationFrame(id);
-  }, [pathname, search]);
+  }, [pathname]);
+
+  // A selection change inside a split view only stops the progress bar.
+  useEffect(() => setNavigating(false), [search]);
 
   // Route change started: any same-origin link click to a different page.
   useEffect(() => {
@@ -123,7 +99,7 @@ export function Shell({ children }: { children: ReactNode }) {
       const a = (e.target as HTMLElement).closest("a[href]");
       const href = a?.getAttribute("href");
       if (!a || !href?.startsWith("/") || a.getAttribute("target") === "_blank") return;
-      if (href.split("#")[0] !== `${window.location.pathname}${window.location.search}`) setNavigating(true);
+      if (new URL(href, window.location.origin).pathname !== window.location.pathname) setNavigating(true);
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -158,12 +134,6 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [router]);
 
-  function toggleCollapsed() {
-    setCollapsed((c) => {
-      try { localStorage.setItem("antos.sidebar", c ? "expanded" : "collapsed"); } catch { /* not remembered */ }
-      return !c;
-    });
-  }
   useEffect(() => {
     if (!menu) return;
     const onDown = (e: MouseEvent) => {
@@ -178,11 +148,11 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : href === "/decisions" ? pathname === "/decisions" || /^\/decisions\/(?!new)/.test(pathname) : pathname.startsWith(href);
-  const crumbs = pageCrumbs ?? PATH_LABELS[pathname] ?? [];
   const n = node.data;
   const sealed = !!n?.last_anchor_at;
   const name = who(me.subject);
   const roles = me.roles.map((r) => r.replace(/_/g, " ")).join(", ");
+  const waiting = queue.data?.length ?? 0;
 
   function chooseTheme(t: ThemeChoice) {
     applyTheme(t);
@@ -194,123 +164,81 @@ export function Shell({ children }: { children: ReactNode }) {
     setDensity(d);
   }
 
+  const groups = NAV.map((items) => items.filter((i) => i.need === null || can(i.need))).filter((g) => g.length);
+
   return (
-    <div className="app" data-collapsed={collapsed}>
+    <div className="app">
       <div className="route-progress" data-active={navigating} aria-hidden />
-      <aside className="sidebar" data-open={navOpen} aria-label="Main navigation">
-        <div className="wordmark">
-          <span className="brand-mark" aria-hidden>Ω</span>
-          <span className="wordmark-text">
-            <strong>ANT-OS Ω</strong>
-            <span>{me.nation_id === "GH" ? "Ghana" : me.nation_id ?? "All nations"} · AFRICA-OS Ω</span>
-          </span>
-        </div>
-        <nav>
-          {NAV.map(({ group, items }) => {
-            const visible = items.filter((i) => i.need === null || can(i.need));
-            if (!visible.length) return null;
-            return (
-              <div key={group} className="nav-group">
-                <div className="nav-group-label">{group}</div>
-                {visible.map(({ href, label, icon: Icon, count }) => (
-                  <Link key={href} href={href} className="nav-item" aria-current={isActive(href) ? "page" : undefined} title={label}>
-                    <Icon size={20} strokeWidth={1.5} aria-hidden />
-                    <span className="nav-label">{label}</span>
-                    {count && queue.data?.length ? <span className="nav-count" aria-label={`${queue.data.length} waiting`}>{queue.data.length}</span> : null}
-                  </Link>
-                ))}
-              </div>
-            );
-          })}
-        </nav>
-        <div className="sidebar-foot">
-          <Link href="/help" className="nav-item" aria-current={pathname === "/help" ? "page" : undefined} title="Help">
-            <HelpCircle size={20} strokeWidth={1.5} aria-hidden />
-            <span className="nav-label">Help</span>
-          </Link>
-          <button type="button" className="nav-item collapse-toggle" onClick={toggleCollapsed}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-            {collapsed ? <PanelLeftOpen size={20} strokeWidth={1.5} aria-hidden /> : <PanelLeftClose size={20} strokeWidth={1.5} aria-hidden />}
-            <span className="nav-label">Collapse sidebar</span>
-          </button>
-          <div className="sidebar-user" title={`${name} · ${roles}`}>
+      <nav className="rail" aria-label="Main navigation">
+        <Link href="/" className="rail-mark" aria-label="ANT-OS Ω home" title="ANT-OS Ω · AFRICA-OS Ω">Ω</Link>
+        {groups.map((items, gi) => (
+          <Fragment key={gi}>
+            {gi > 0 ? <span className="rail-sep" aria-hidden /> : null}
+            {items.map(({ href, label, icon: Icon, count }) => (
+              <Link key={href} href={href} className="rail-item" data-tip={label} aria-label={label}
+                aria-current={isActive(href) ? "page" : undefined}>
+                <Icon strokeWidth={1.5} aria-hidden />
+                {count && waiting ? <span className="rail-badge" aria-label={`${waiting} waiting`}>{waiting > 99 ? "99+" : waiting}</span> : null}
+              </Link>
+            ))}
+          </Fragment>
+        ))}
+        <span className="rail-spacer" />
+        <button type="button" className="rail-item" data-tip="Search  Ctrl K" aria-label="Search (Ctrl+K)" onClick={() => setPalette(true)}>
+          <Search strokeWidth={1.5} aria-hidden />
+        </button>
+        <Link href="/help" className="rail-item" data-tip="Help" aria-label="Help" aria-current={pathname === "/help" ? "page" : undefined}>
+          <HelpCircle strokeWidth={1.5} aria-hidden />
+        </Link>
+        <div ref={menuRef}>
+          <button type="button" className="rail-item" data-tip={menu ? undefined : name} aria-haspopup="menu" aria-expanded={menu}
+            aria-label="Account menu" onClick={() => setMenu((m) => !m)}>
             <span className="avatar" aria-hidden>{name.slice(0, 2).toUpperCase()}</span>
-            <span className="sidebar-user-text">
-              <strong>{name}</strong>
-              <span>{roles}</span>
-            </span>
-          </div>
+          </button>
+          {menu ? (
+            <div className="menu rail-menu" role="menu">
+              <div style={{ padding: "8px 12px" }}>
+                <div className="t-strong">{name}</div>
+                <div className="t-caption t-muted" style={{ textTransform: "capitalize" }}>{roles}</div>
+                <div className="t-caption t-muted">{me.nation_id === "GH" ? "Ghana" : me.nation_id ?? "All nations"} · AFRICA-OS Ω</div>
+              </div>
+              <hr className="divider" style={{ margin: "4px 0" }} />
+              <div className="menu-label">Appearance</div>
+              {([["system", "Match device", Monitor], ["light", "Light", Sun], ["dark", "Dark", Moon]] as const).map(([v, t, Icon]) => (
+                <button key={v} type="button" role="menuitemradio" aria-checked={theme === v} className="menu-item" onClick={() => chooseTheme(v)}>
+                  <Icon size={16} strokeWidth={1.5} aria-hidden /> {t}
+                  {theme === v ? <span style={{ marginLeft: "auto" }} aria-hidden>✓</span> : null}
+                </button>
+              ))}
+              <hr className="divider" style={{ margin: "4px 0" }} />
+              <div className="menu-label">Density</div>
+              <div style={{ padding: "4px 8px 8px" }}>
+                <Segmented<Density> label="Density" value={density} onChange={chooseDensity}
+                  options={[{ value: "compact", label: "Compact" }, { value: "standard", label: "Standard" }, { value: "comfortable", label: "Comfortable" }]} />
+              </div>
+              <hr className="divider" style={{ margin: "4px 0" }} />
+              <button type="button" role="menuitem" className="menu-item" onClick={signOut}>
+                <LogOut size={16} strokeWidth={1.5} aria-hidden /> Sign out
+              </button>
+            </div>
+          ) : null}
         </div>
-      </aside>
-      {navOpen ? <div className="scrim" style={{ zIndex: 39 }} onClick={() => setNavOpen(false)} /> : null}
+      </nav>
 
       <div className="main">
-        <header className="header">
-          <button type="button" className="icon-button menu-toggle" aria-label="Open navigation" onClick={() => setNavOpen(true)}>
-            <Menu size={20} strokeWidth={1.5} />
-          </button>
-          <nav className="breadcrumb" aria-label="Breadcrumb">
-            {crumbs.map((c, i) => (
-              <Fragment key={`${c.label}${i}`}>
-                {i > 0 ? <span className="breadcrumb-sep" aria-hidden>/</span> : null}
-                {i === crumbs.length - 1 ? <span aria-current="page">{c.label}</span> : c.href ? <Link href={c.href}>{c.label}</Link> : <span>{c.label}</span>}
-              </Fragment>
-            ))}
-          </nav>
-          <div className="header-spacer" />
-          <button type="button" className="search-button" onClick={() => setPalette(true)} aria-label="Search (Ctrl+K)">
-            <Search size={16} strokeWidth={1.5} aria-hidden />
-            <span className="search-label">Search decisions, sectors, records…</span>
-            <kbd>Ctrl K</kbd>
-          </button>
-          {n ? (
-            <Link href={can(CAN.audit) ? "/audit" : "/help"} className="node-status" title={sealed ? `Last sealed ${relative(n.last_anchor_at!)} · ${n.entries_since_anchor} records since` : "Records have not been sealed yet"}>
-              {sealed ? <ShieldCheck size={16} strokeWidth={1.5} style={{ color: "var(--good)" }} aria-hidden /> : <ShieldAlert size={16} strokeWidth={1.5} style={{ color: "var(--warning)" }} aria-hidden />}
-              <span className="node-label">{sealed ? `Records verified · sealed ${relative(n.last_anchor_at!)}` : "Records not yet sealed"}</span>
-            </Link>
-          ) : null}
-          <div ref={menuRef} style={{ position: "relative" }}>
-            <button type="button" className="user-button" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
-              <span className="avatar" aria-hidden>{name.slice(0, 2).toUpperCase()}</span>
-              <ChevronDown size={16} strokeWidth={1.5} aria-hidden />
-              <span className="sr-only">Account menu</span>
-            </button>
-            {menu ? (
-              <div className="menu" role="menu">
-                <div style={{ padding: "8px 12px" }}>
-                  <div className="t-strong">{name}</div>
-                  <div className="t-caption t-muted" style={{ textTransform: "capitalize" }}>{roles}</div>
-                </div>
-                <hr className="divider" style={{ margin: "4px 0" }} />
-                <div className="menu-label">Appearance</div>
-                {([["system", "Match device", Monitor], ["light", "Light", Sun], ["dark", "Dark", Moon]] as const).map(([v, t, Icon]) => (
-                  <button key={v} type="button" role="menuitemradio" aria-checked={theme === v} className="menu-item" onClick={() => chooseTheme(v)}>
-                    <Icon size={16} strokeWidth={1.5} aria-hidden /> {t}
-                    {theme === v ? <span style={{ marginLeft: "auto" }} aria-hidden>✓</span> : null}
-                  </button>
-                ))}
-                <hr className="divider" style={{ margin: "4px 0" }} />
-                <div className="menu-label">Density</div>
-                <div style={{ padding: "4px 8px 8px" }}>
-                  <Segmented<Density> label="Density" value={density} onChange={chooseDensity}
-                    options={[{ value: "compact", label: "Compact" }, { value: "standard", label: "Standard" }, { value: "comfortable", label: "Comfortable" }]} />
-                </div>
-                <hr className="divider" style={{ margin: "4px 0" }} />
-                <button type="button" role="menuitem" className="menu-item" onClick={signOut}>
-                  <LogOut size={16} strokeWidth={1.5} aria-hidden /> Sign out
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </header>
-
-        <main className="content" id="main">
-          <div key={pathname} className="page-enter">{children}</div>
+        <main className="workspace" id="main">
+          <div key={pathname} className="page-enter content">{children}</div>
         </main>
 
-        <footer className="footer">
-          <span>ANT-OS Ω / AFRICA-OS Ω, the VPF and the 24-Hour Africa Economy Policy are the work of Dr. David King Boison.</span>
-          <span>{n ? `Engine ${n.engine_version} · Rules ${n.manifest_version} · Node ${n.node_id}` : null}</span>
+        <footer className="statusbar">
+          <span className="grow">ANT-OS Ω / AFRICA-OS Ω, the VPF and the 24-Hour Africa Economy Policy are the work of Dr. David King Boison.</span>
+          {n ? (
+            <Link href={can(CAN.audit) ? "/audit" : "/help"} title={sealed ? `Last sealed ${relative(n.last_anchor_at!)} · ${n.entries_since_anchor} records since` : "Records have not been sealed yet"}>
+              {sealed ? <ShieldCheck strokeWidth={1.5} style={{ color: "var(--good)" }} aria-hidden /> : <ShieldAlert strokeWidth={1.5} style={{ color: "var(--warning)" }} aria-hidden />}
+              {sealed ? `Sealed ${relative(n.last_anchor_at!)}` : "Not yet sealed"}
+            </Link>
+          ) : null}
+          {n ? <span className="hide-sm">Engine {n.engine_version} · Rules {n.manifest_version} · Node {n.node_id}</span> : null}
         </footer>
       </div>
 

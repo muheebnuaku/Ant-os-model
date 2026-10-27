@@ -1,23 +1,21 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
 import { ActivityHeatmap, HeatLegend, Sparkline } from "@/components/charts";
+import { ListItem, ListSkeleton, Pane, SplitView, useSelectHref } from "@/components/console";
 import { DataTable } from "@/components/DataTable";
 import {
   Badge,
-  ContextBar,
   Delta,
-  Drawer,
   EmptyState,
   ErrorNotice,
   Kpi,
   Kpis,
   Meter,
   Notice,
-  PageHeader,
   Section,
   Segmented,
   SECTOR_ORDER,
@@ -79,8 +77,6 @@ export default function BriefingPage() {
 
 function Briefing() {
   const { me, can } = useSession();
-  const router = useRouter();
-  const params = useSearchParams();
   const now = useNow(30_000);
   const [win, setWin] = useQueryState("window", "24");
   const hours = WINDOWS.some((w) => w.value === win) ? Number(win) : 24;
@@ -90,14 +86,9 @@ function Briefing() {
     pollMs: 30_000,
     body: { nation_id: nation, time_window_hours: hours },
   });
-  const openSector = params.get("sector");
-  const setSector = (id: string | null) => {
-    const next = new URLSearchParams(params.toString());
-    if (id) next.set("sector", id);
-    else next.delete("sector");
-    const qs = next.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-  };
+  const [openSector, setSectorParam] = useQueryState("sector", "");
+  const setSector = (id: string | null) => setSectorParam(id ?? "");
+  const sectorHref = useSelectHref("sector");
 
   const data = room.data;
   const queue = useMemo(
@@ -112,7 +103,7 @@ function Briefing() {
   if (!allowed) {
     return (
       <div className="page">
-        <PageHeader title="Briefing" description="The national picture is available to sector leads, analysts and regulators." />
+        <header className="page-header"><div><h1>Briefing</h1><p>The national picture is available to sector leads, analysts and regulators.</p></div></header>
         <EmptyState title="Your work is in the review queue" action={<Link className="btn" href="/escalations">Open the review queue</Link>} />
       </div>
     );
@@ -124,124 +115,107 @@ function Briefing() {
   const diff = p ? p.decisions_in_window - p.decisions_previous_window : 0;
 
   return (
-    <div className="page">
-      <PageHeader
-        title="Briefing"
-        description={`National picture for ${nation === "GH" ? "Ghana" : nation}`}
-        actions={can(CAN.decide) ? <Link className="btn btn-primary" href="/decisions/new">New decision</Link> : null}
-      />
-
-      <ContextBar
-        meta={data ? <><span className="live-dot" aria-hidden /> Live · updated <Time iso={data.generated_at} now={now} /></> : null}
-      >
-        <Segmented label="Time window" options={WINDOWS} value={String(hours)} onChange={setWin} />
-      </ContextBar>
-
-      <ErrorNotice error={room.error} />
-
-      {!data ? (
-        <div className="card"><SkeletonRows rows={6} /></div>
-      ) : (
-        <div className="page refreshable" data-refreshing={room.refreshing}>
-          <Kpis count={4}>
-            <Kpi label="Waiting for review" value={waiting} context={`${p!.at_risk_escalations} due within 30 min`} />
-            <Kpi label="Overdue reviews" value={overdue} context={overdue ? <Badge status="overdue">Past deadline</Badge> : "None past deadline"} />
-            <Kpi label={`Decisions · last ${windowText(hours)}`} value={p!.decisions_in_window}
-              context={<><Delta value={diff} /> vs previous {windowText(hours)}</>} />
-            <Kpi label="Cleared to act" value={p!.decisions_in_window ? pct(p!.allowed_for_action / p!.decisions_in_window) : "No decisions"}
-              context={`${p!.allowed_for_action} of ${p!.decisions_in_window} decisions`} />
-          </Kpis>
-
-          <Section title="Situation summary">
-            <div className="card card-pad">
-              <ul className="summary-list">
-                {situation(data, queue, hours, now).map((s, i) => (
-                  <li key={i}><Badge tone={s.tone} dot>{s.tone === "good" ? "Stable" : s.tone === "neutral" ? "Note" : s.tone === "critical" ? "Urgent" : "Soon"}</Badge><span>{s.text}</span></li>
+    <SplitView hasSelection={!!openSector} stackOnMobile>
+      <Pane kind="list" title="Briefing" label="Needs action and sectors"
+        actions={can(CAN.decide) ? <Link className="btn btn-primary btn-compact" href="/decisions/new"><Plus size={14} strokeWidth={1.5} aria-hidden />New</Link> : null}
+        toolbar={<Segmented label="Time window" options={WINDOWS} value={String(hours)} onChange={setWin} />}>
+        {!data ? <ListSkeleton /> : (
+          <>
+            <div className="list-group-label"><span>Needs action</span><span>{queue.length}</span></div>
+            {queue.length ? (
+              <ul className="list" aria-label="Open reviews">
+                {queue.map((e) => (
+                  <ListItem key={e.escalation_id} href={`/escalations?id=${encodeURIComponent(e.escalation_id)}`} selected={false}
+                    title={e.objective}
+                    aside={<RemainingText e={e} now={now} />}
+                    meta={<><Badge status={e.priority} dot /><span>{humanize(e.sector)}</span><span>{humanize(e.assigned_role)}</span></>}
+                  />
                 ))}
               </ul>
-            </div>
-          </Section>
+            ) : <p className="list-empty">Nothing is waiting. New reviews appear here as soon as they are raised.</p>}
+            <div className="list-group-label"><span>Sectors</span><span>{sectors.length}</span></div>
+            <ul className="list" aria-label="Sectors">
+              {sectors.map((s) => {
+                const reviews = Object.values(s.open_escalations).reduce((a, b) => a + b, 0);
+                return (
+                  <ListItem key={s.sector} href={sectorHref(s.sector)} selected={s.sector === openSector}
+                    title={sectorName(s.sector_name)}
+                    aside={reviews ? `${reviews} review${reviews > 1 ? "s" : ""}` : null}
+                    meta={<><Badge status={s.status} dot />{s.mean_freshness === null ? <span>No data</span> : <Meter value={s.mean_freshness} width={64} />}</>}
+                  />
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </Pane>
 
-          <div className="layout-main">
-            <Section title="Needs action" description="Open reviews, soonest deadline first."
-              actions={<Link className="btn btn-tertiary" href="/escalations">Open review queue</Link>}>
-              <div className="card">
-                <DataTable
-                  caption="Open reviews"
-                  rows={queue}
-                  rowKey={(e) => e.escalation_id}
-                  empty={{ title: "Nothing is waiting", description: "New reviews appear here as soon as they are raised." }}
-                  onRowClick={(e) => router.push(e.audit_ref ? `/decisions/${e.audit_ref}` : "/escalations")}
-                  columns={[
-                    { key: "p", header: "Priority", render: (e) => <Badge status={e.priority} dot /> },
-                    { key: "d", header: "Decision", render: (e) => <><div className="cell-primary">{e.objective}</div><div className="cell-secondary">{e.reasons[0]?.message}</div></> },
-                    { key: "s", header: "Sector", render: (e) => humanize(e.sector) },
-                    { key: "a", header: "Assigned to", render: (e) => humanize(e.assigned_role) },
-                    { key: "t", header: "Time remaining", render: (e) => <Remaining e={e} now={now} /> },
-                    { key: "o", header: "", render: (e) => <Link href={e.audit_ref ? `/decisions/${e.audit_ref}` : "/escalations"}>Open</Link> },
-                  ]}
-                />
-              </div>
-            </Section>
+      {openSector && data ? (
+        <SectorPanel s={data.sectors.find((x) => x.sector === openSector)} queue={queue.filter((e) => e.sector === openSector)}
+          now={now} back={sectorHref(null)} />
+      ) : (
+        <Pane kind="detail" label="National overview"
+          title={`National picture · ${nation === "GH" ? "Ghana" : nation}`}
+          actions={data ? <span className="t-small t-muted row" style={{ gap: 6 }}><span className="live-dot" aria-hidden /> Updated <Time iso={data.generated_at} now={now} /></span> : null}>
+          <div className="overview">
+            <ErrorNotice error={room.error} />
+            {!data ? <div className="card"><SkeletonRows rows={6} /></div> : (
+              <div className="overview refreshable" data-refreshing={room.refreshing}>
+                <Kpis count={4}>
+                  <Kpi label="Waiting for review" value={waiting} context={`${p!.at_risk_escalations} due within 30 min`} />
+                  <Kpi label="Overdue reviews" value={overdue} context={overdue ? <Badge status="overdue">Past deadline</Badge> : "None past deadline"} />
+                  <Kpi label={`Decisions · last ${windowText(hours)}`} value={p!.decisions_in_window}
+                    context={<><Delta value={diff} /> vs previous {windowText(hours)}</>} />
+                  <Kpi label="Cleared to act" value={p!.decisions_in_window ? pct(p!.allowed_for_action / p!.decisions_in_window) : "No decisions"}
+                    context={`${p!.allowed_for_action} of ${p!.decisions_in_window} decisions`} />
+                </Kpis>
 
-            <Section title="Sector status" description="All eight sectors, in fixed order.">
-              <div className="card">
-                <table className="table">
-                  <caption className="sr-only">Sector status</caption>
-                  <thead><tr><th>Sector</th><th>Status</th><th className="num">Freshness</th><th className="num">Reviews</th></tr></thead>
-                  <tbody>
-                    {sectors.map((s) => (
-                      <tr key={s.sector} data-clickable="true" onClick={() => setSector(s.sector)}>
-                        <td data-label="Sector"><button type="button" className="heat-label t-strong" onClick={() => setSector(s.sector)}>{sectorName(s.sector_name)}</button></td>
-                        <td data-label="Status"><Badge status={s.status} dot /></td>
-                        <td data-label="Freshness" className="num">{s.mean_freshness === null ? <span className="t-muted">No data</span> : <Meter value={s.mean_freshness} width={48} />}</td>
-                        <td data-label="Reviews" className="num">{Object.values(s.open_escalations).reduce((a, b) => a + b, 0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <Section title="Situation summary">
+                  <div className="card card-pad">
+                    <ul className="summary-list">
+                      {situation(data, queue, hours, now).map((s, i) => (
+                        <li key={i}><Badge tone={s.tone} dot>{s.tone === "good" ? "Stable" : s.tone === "neutral" ? "Note" : s.tone === "critical" ? "Urgent" : "Soon"}</Badge><span>{s.text}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                </Section>
+
+                <Section title="Activity by sector" description={`Last ${windowText(hours)}. Each cell shows the weakest result among that period's decisions.`} actions={<HeatLegend />}>
+                  <div className="card card-pad">
+                    <ActivityHeatmap bucketMinutes={data.bucket_minutes} onRowClick={setSector} showLegend={false}
+                      rows={sectors.map((s) => ({ key: s.sector, label: sectorName(s.sector_name), buckets: s.timeline }))} />
+                  </div>
+                </Section>
               </div>
-            </Section>
+            )}
           </div>
-
-          <Section title="Activity by sector" description={`Last ${windowText(hours)}. Each cell shows the weakest result among that period's decisions.`} actions={<HeatLegend />}>
-            <div className="card card-pad">
-              <ActivityHeatmap bucketMinutes={data.bucket_minutes} onRowClick={setSector} showLegend={false}
-                rows={sectors.map((s) => ({ key: s.sector, label: sectorName(s.sector_name), buckets: s.timeline }))} />
-            </div>
-          </Section>
-
-          {openSector ? (
-            <SectorDrawer s={data.sectors.find((x) => x.sector === openSector)} queue={queue.filter((e) => e.sector === openSector)}
-              now={now} onClose={() => setSector(null)} />
-          ) : null}
-        </div>
+        </Pane>
       )}
-    </div>
+    </SplitView>
   );
 }
 
-function Remaining({ e, now }: { e: Escalation; now: number }) {
-  const due = new Date(e.due_at).getTime();
-  const created = new Date(e.created_at).getTime();
-  const used = Math.min(1, Math.max(0, (now - created) / Math.max(1, due - created)));
-  const late = due < now;
+function RemainingText({ e, now }: { e: Escalation; now: number }) {
+  const late = new Date(e.due_at).getTime() < now;
   return (
-    <div className="stack-sm" style={{ gap: 4, minWidth: 120 }}>
-      <span className={late ? "t-strong" : undefined} style={late ? { color: "var(--critical)" } : undefined} title={absolute(e.due_at)}>
-        {late ? `Overdue by ${relative(e.due_at, now).replace(" ago", "")}` : relative(e.due_at, now).replace("in ", "")}
-      </span>
-      <span className="meter" data-tone={late ? "critical" : used > 0.75 ? "warning" : undefined} aria-hidden><span style={{ width: `${used * 100}%` }} /></span>
-    </div>
+    <span title={absolute(e.due_at)} style={late ? { color: "var(--critical)", fontWeight: 600 } : undefined}>
+      {late ? `${relative(e.due_at, now).replace(" ago", "")} late` : `${relative(e.due_at, now).replace("in ", "")} left`}
+    </span>
   );
 }
 
-function SectorDrawer({ s, queue, now, onClose }: { s: SectorSummary | undefined; queue: Escalation[]; now: number; onClose: () => void }) {
+function SectorPanel({ s, queue, now, back }: { s: SectorSummary | undefined; queue: Escalation[]; now: number; back: string }) {
   const decisions = useApi<DecisionSummary[]>(s ? `/v1/decisions?sector=${s.sector}&limit=8` : null);
-  if (!s) return <Drawer title="Unknown sector" onClose={onClose}><EmptyState title="This sector is not configured" /></Drawer>;
+  if (!s) return <Pane kind="detail" title="Sector" back={back}><EmptyState title="This sector is not configured" /></Pane>;
   return (
-    <Drawer title={s.sector_name} eyebrow="Sector" status={<><Badge status={s.status} /><span className="t-small t-muted">24-hour economy priority: {s.priority_24hae.toLowerCase()}</span></>} onClose={onClose}>
-      <div className="kpis" style={{ ["--n" as string]: 3, gap: 16 }}>
+    <Pane kind="detail" back={back} label={s.sector_name} title={<>Sector <span className="count">{humanize(s.sector)}</span></>}
+      actions={<Link className="btn btn-compact" href={`/decisions?sector=${s.sector}`}>All decisions</Link>}>
+    <div className="pane-detail-inner">
+      <header className="detail-head">
+        <span className="eyebrow"><Badge status={s.status} dot /> 24-hour economy priority: {s.priority_24hae.toLowerCase()}</span>
+        <h2>{s.sector_name}</h2>
+      </header>
+      <div className="kpis" style={{ ["--n" as string]: 3 }}>
         <Kpi label="Evidence received" value={s.signals_in_window} />
         <Kpi label="Decisions" value={s.decisions_in_window} />
         <Kpi label="24HAE alignment" value={s.hae_alignment_mean === null ? <span className="t-small t-muted">Not assessed</span> : pct(s.hae_alignment_mean)} />
@@ -265,7 +239,7 @@ function SectorDrawer({ s, queue, now, onClose }: { s: SectorSummary | undefined
         {queue.length ? (
           <div className="stack-sm">
             {queue.map((e) => (
-              <Link key={e.escalation_id} href={e.audit_ref ? `/decisions/${e.audit_ref}` : "/escalations"} className="row" style={{ color: "var(--text)" }}>
+              <Link key={e.escalation_id} href={`/escalations?id=${encodeURIComponent(e.escalation_id)}`} className="row" style={{ color: "var(--text)" }}>
                 <Badge status={e.priority} /><span>{e.objective}</span><span className="t-small t-muted">· due {relative(e.due_at, now)}</span>
               </Link>
             ))}
@@ -277,13 +251,14 @@ function SectorDrawer({ s, queue, now, onClose }: { s: SectorSummary | undefined
           <DataTable caption="Recent decisions" rows={decisions.data} loading={decisions.loading} rowKey={(d) => d.audit_ref}
             empty={{ title: "No decisions yet" }}
             columns={[
-              { key: "d", header: "Decision", render: (d) => <Link href={`/decisions/${d.audit_ref}`} className="cell-primary">{d.objective}</Link> },
+              { key: "d", header: "Decision", render: (d) => <Link href={`/decisions?ref=${encodeURIComponent(d.audit_ref)}`} className="cell-primary">{d.objective}</Link> },
               { key: "r", header: "Result", render: (d) => <Badge status={d.validation_state} dot /> },
               { key: "w", header: "When", render: (d) => <Time iso={d.created_at} now={now} /> },
             ]} />
         </div>
       </Section>
       {queue.length || s.status !== "no_data" ? null : <Notice tone="neutral">Nothing has been reported for this sector in the selected window. Nothing is estimated.</Notice>}
-    </Drawer>
+    </div>
+    </Pane>
   );
 }
