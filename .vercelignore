@@ -1,0 +1,11 @@
+# The antos-api Vercel project (repository root) deploys only the API function.
+# The web app is its own Vercel project with root directory "web".
+/*
+!/api
+!/packages
+!/services
+!/profiles
+!/requirements.txt
+!/vercel.json
+**/__pycache__
+**/tests
