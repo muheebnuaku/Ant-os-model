@@ -20,7 +20,7 @@ from typing import Annotated, Any, Literal
 
 import anyio
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 from redis.asyncio import Redis
 from sqlalchemy import select, text
@@ -171,6 +171,7 @@ def create_app(settings: Settings | None = None, *, runtime: Runtime | None = No
     # Initialised on first use as well as at start-up: serverless hosts may not
     # run the start-up event.
     app.state.ready = False
+    app.state.settings = settings
     app.state.init = init
     app.state.init_lock = asyncio.Lock()
     _errors(app)
@@ -359,6 +360,15 @@ def _routes(app: FastAPI) -> None:
     @app.get("/healthz", tags=["ops"])
     async def healthz() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/", include_in_schema=False, response_model=None)
+    async def front_page(request: Request) -> RedirectResponse | dict[str, str]:
+        """People who open the API address in a browser are sent to the web app."""
+        settings: Settings = request.app.state.settings
+        if settings.public_web_url:
+            return RedirectResponse(settings.public_web_url, status_code=307)
+        return {"service": "ANT-OS Ω API", "web_app": "not configured",
+                "documentation": "/docs", "health": "/healthz"}
 
     @app.get("/v1/ops/daily", tags=["ops"])
     async def daily(request: Request, rt: RT) -> dict[str, Any]:

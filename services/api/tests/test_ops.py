@@ -108,3 +108,17 @@ async def test_service_starts_and_answers_health_checks_without_a_database() -> 
         async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
             assert (await client.get("/healthz")).status_code == 200
             assert (await client.get("/readyz")).status_code == 500
+
+
+async def test_api_front_page_sends_people_to_the_web_app() -> None:
+    from antos_api.app import create_app
+    from antos_api.settings import Settings
+
+    for web, expected in (("https://antos-web.example", 307), (None, 200)):
+        app = create_app(Settings(public_web_url=web, profile_dir=ROOT / "profiles" / "africa"))
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+            r = await client.get("/")
+        assert r.status_code == expected
+        if web:
+            assert r.headers["location"] == web

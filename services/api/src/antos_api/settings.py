@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     # the proxy's X-Forwarded-For header.
     serverless: bool = False
     trust_forwarded_for: bool = False
+    # Where people should go: visitors to the API's front page are sent here.
+    public_web_url: str | None = None
     # Shared secret for scheduled calls to /v1/ops/daily (Vercel sets CRON_SECRET).
     cron_secret: SecretStr | None = None
     # Apply database migrations at start-up (hosts where no one can run Alembic).
