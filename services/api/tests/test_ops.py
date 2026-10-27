@@ -95,3 +95,16 @@ def test_anchor_key_can_come_from_an_environment_variable() -> None:
     rt = build_runtime(Settings(anchor_private_key_pem=pem, profile_dir=ROOT / "profiles" / "africa"),
                        sessions=None)  # type: ignore[arg-type]
     assert rt.anchor_signer is not None and len(rt.anchor_keys) == 1
+
+
+async def test_service_starts_and_answers_health_checks_without_a_database() -> None:
+    from antos_api.app import create_app
+    from antos_api.settings import Settings
+
+    app = create_app(Settings(database_url="postgresql+asyncpg://nobody@127.0.0.1:9/none",
+                              profile_dir=ROOT / "profiles" / "africa"))
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+            assert (await client.get("/healthz")).status_code == 200
+            assert (await client.get("/readyz")).status_code == 500

@@ -10,6 +10,7 @@ log write (same transaction) → response.
 
 import asyncio
 import hmac
+import logging
 import math
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -50,6 +51,8 @@ from antos_api.settings import Settings
 from antos_api.tables import AnchorRow, ApiKey
 from antos_core.config import UnknownSectorError
 from antos_core.contracts import EscalationPriority, SignalInput
+
+log = logging.getLogger("antos.api")
 
 # Permissions (from roles.yaml) accepted by each operation: any one suffices.
 INGEST = ("submit_signals", "submit_market_signals", "submit_research_signals")
@@ -148,9 +151,14 @@ def create_app(settings: Settings | None = None, *, runtime: Runtime | None = No
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        await ensure_ready(app)
+        # A database that is down at start-up must not take the whole service
+        # (and its health check) down with it; requests retry initialisation.
+        try:
+            await ensure_ready(app)
+        except Exception:
+            log.exception("start-up initialisation failed; will retry on the next request")
         yield
-        if app.state.engine is not None:
+        if getattr(app.state, "engine", None) is not None:
             await app.state.engine.dispose()
 
     app = FastAPI(title="ANT-OS Ω / AFRICA-OS Ω", version="0.2.0", lifespan=lifespan,
